@@ -12,10 +12,12 @@ from protorpc import message_types
 from protorpc import remote
 
 from battle_containers import USER_POST_REQUEST
+from battle_containers import NEW_GAME_REQUEST
 
 from battle_messages import StringMessage
 
 from battle_models import User
+from battle_models import Game
 
 
 # @endpoints.api BattleshipApi ------------------------------------------------
@@ -28,6 +30,47 @@ class BattleshipApi(remote.Service):
     """
     Battleship API v1
     """
+
+#   _validateBlankUser --------------------------------------------------------
+
+    def _validateBlankUser(self,
+                           user_to_validate,
+                           custom_error_message
+                           ):
+        """
+        Ensure the username is not blank.
+
+        Args:
+          user_to_validate: the username to verify.
+          custom_error_message: enter a custom error message.
+
+        Returns:
+          Raises a BadRequestException if the user is blank.
+          Returns true if the user is not blank.
+        """
+        if user_to_validate is None:
+            raise endpoints.BadRequestException(
+                '{} cannot be blank.'.format(custom_error_message))
+        return True
+
+#   _getUser ------------------------------------------------------------------
+
+    def _getUser(self,
+                 user_to_get
+                 ):
+        """
+        Query the database for a user.
+
+        Args:
+          user_to_get: the username to get from the database.
+
+        Returns:
+          True if the user is found.
+          False if the user is not found.
+        """
+        if User.query(User.user_name == user_to_get).get():
+            return True
+        return False
 
 #   @endpoints.method create_user ---------------------------------------------
 
@@ -43,16 +86,68 @@ class BattleshipApi(remote.Service):
         """
         Create a User. Username is required. Username must be unique.
         """
-        if request.username is None:
-            raise endpoints.BadRequestException('Username cannot be blank.')
+        self._validateBlankUser(request.username, 'Username')
 
-        if User.query(User.user_name == request.username).get():
-            raise endpoints.ConflictException('That user already exists.')
+        if self._getUser(request.username):
+            raise endpoints.ConflictException(
+                '{} user already exists.'.format(request.username))
 
         new_user = User(user_name=request.username)
         new_user.put()
 
         return StringMessage(message='{} was successfully created!'.format(request.username))
+
+#   @endpoints.method new_game ------------------------------------------------
+
+    @endpoints.method(NEW_GAME_REQUEST,
+                      StringMessage,
+                      name='new_game',
+                      path='game',
+                      http_method='POST'
+                      )
+    def new_game(self,
+                 request
+                 ):
+        """
+        Create a new game.
+        """
+        # Ensure the users are not blank.
+        self._validateBlankUser(request.username1, 'username1')
+        self._validateBlankUser(request.username2, 'username2')
+
+        # Ensure the users exist in the database.
+        if not self._getUser(request.username1):
+            raise endpoints.BadRequestException(
+                '{} does not exist.'.format(request.username1))
+
+        if not self._getUser(request.username2):
+            raise endpoints.BadRequestException(
+                '{} does not exist.'.format(request.username2))
+
+        # Ensure the users are not the same.
+        if (request.username1 == request.username2):
+            raise endpoints.BadRequestException('Users cannot be the same.')
+
+        # Ensure a game is not already in progress.
+        q = Game.query(Game.user1.IN([request.username1, request.username2]),
+                       Game.user2.IN([request.username1, request.username2]),
+                       Game.status == 0  # In Progress
+                       ).count()
+
+        if q > 0:
+            raise endpoints.BadRequestException(
+                'A game is currently in progress for {} and {}.'.format(
+                    request.username1, request.username2))
+
+        # Create a new game.
+        a_new_game = Game(
+            user1=request.username1,
+            user2=request.username2,
+            status=0,  # In Progress
+        )
+        a_new_game.put()
+
+        return StringMessage(message='Game was successfully created!')
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

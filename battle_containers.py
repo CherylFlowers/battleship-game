@@ -12,9 +12,16 @@ from protorpc import message_types
 from protorpc import remote
 
 from battle_messages import SingleUser
+from battle_messages import NewGame
 
 
 USER_POST_REQUEST = endpoints.ResourceContainer(
     SingleUser,
     username=messages.StringField(1, required=True),
+)
+
+NEW_GAME_REQUEST = endpoints.ResourceContainer(
+    NewGame,
+    username1=messages.StringField(1, required=True),
+    username2=messages.StringField(2, required=True),
 )
