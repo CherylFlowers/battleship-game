@@ -16,6 +16,7 @@ from battle_messages import NewGame
 from battle_messages import CancelGame
 from battle_messages import GetUserGames
 from battle_messages import SingleMove
+from battle_messages import GameHistory
 
 
 USER_POST_REQUEST = endpoints.ResourceContainer(
@@ -45,4 +46,9 @@ MOVE_POST_REQUEST = endpoints.ResourceContainer(
     websafe_user_key=messages.StringField(2, required=True),
     row=messages.StringField(3, required=True),
     col=messages.IntegerField(4, required=True),
+)
+
+GET_GAME_HISTORY_REQUEST = endpoints.ResourceContainer(
+    GameHistory,
+    websafe_game_key=messages.StringField(1, required=True),
 )

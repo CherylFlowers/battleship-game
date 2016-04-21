@@ -21,3 +21,8 @@ indexes:
   - name: status
   - name: user2
   - name: user1
+
+- kind: Move
+  properties:
+  - name: game_id
+  - name: sequence

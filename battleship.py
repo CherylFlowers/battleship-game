@@ -18,10 +18,13 @@ from battle_containers import NEW_GAME_REQUEST
 from battle_containers import CANCEL_GAME_REQUEST
 from battle_containers import GET_USER_GAMES_REQUEST
 from battle_containers import MOVE_POST_REQUEST
+from battle_containers import GET_GAME_HISTORY_REQUEST
 
 from battle_messages import StringMessage
 from battle_messages import ListOfGames
 from battle_messages import SingleGame
+from battle_messages import ListOfMoves
+from battle_messages import SingleMoveForList
 
 from battle_models import User
 from battle_models import Game
@@ -163,6 +166,43 @@ class BattleshipApi(remote.Service):
 
         # Return the updated game message.
         return selected_game
+
+#   _copyToMoveList -----------------------------------------------------------
+
+    def _copyToMoveList(self,
+                        move_to_copy
+                        ):
+        """
+        Populate the outbound move message with values from move_to_copy.
+
+        Args:
+            move_to_copy: the move object to copy to the outbound message
+
+        Returns:
+            an outbound message populated with info from move_to_copy arg
+        """
+        selected_move = SingleMoveForList()
+
+        # Iterate through all fields in the move message.
+        for field in selected_move.all_fields():
+            # If a field in the move_to_copy arg matches a field in the
+            # move message, copy the value from the arg to the message.
+            if hasattr(move_to_copy, field.name):
+                setattr(selected_move, field.name,
+                        getattr(move_to_copy, field.name))
+            elif (field.name == "websafe_game_key_for_move"):
+                # Encode the key so it's suitable to embed in a URL.
+                setattr(selected_move, field.name,
+                        move_to_copy.game_id.urlsafe())
+            elif (field.name == "websafe_user_key_for_move"):
+                setattr(selected_move, field.name,
+                        move_to_copy.user_id.urlsafe())
+
+        # Verify all values in the move message have been assigned a value.
+        selected_move.check_initialized()
+
+        # Return the updated move message.
+        return selected_move
 
 #   @endpoints.method create_user ---------------------------------------------
 
@@ -375,6 +415,33 @@ class BattleshipApi(remote.Service):
             return_message = 'That was a miss.'
 
         return StringMessage(message=return_message)
+
+#   @endpoints.method get_game_history ----------------------------------------
+
+    @endpoints.method(GET_GAME_HISTORY_REQUEST,
+                      ListOfMoves,
+                      name='get_game_history',
+                      path='gameGetHistory',
+                      http_method='GET'
+                      )
+    def get_game_history(self,
+                         request
+                         ):
+        """Get a list of all moves for a game."""
+        # Raise an exception if the game ID is blank.
+        if request.websafe_game_key is None:
+            raise endpoints.BadRequestException(
+                'websafe_game_key cannot be blank.')
+
+        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+
+        # Get all moves for a game.
+        moves = Move.query(Move.game_id == game_key)
+        moves = moves.order(Move.sequence)
+
+        return ListOfMoves(
+            all_moves=[self._copyToMoveList(each_move) for each_move in moves]
+        )
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

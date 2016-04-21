@@ -44,6 +44,11 @@ class SingleMove(messages.Message):
     a_col = messages.IntegerField(4)
 
 
+class GameHistory(messages.Message):
+    """Inbound request for a history of all moves in a game."""
+    a_game_id = messages.StringField(1)
+
+
 #   Outbound Response ---------------------------------------------------------
 
 
@@ -63,3 +68,18 @@ class SingleGame(messages.Message):
 class ListOfGames(messages.Message):
     """Outbound message to return a list of games."""
     all_games = messages.MessageField(SingleGame, 1, repeated=True)
+
+
+class SingleMoveForList(messages.Message):
+    """Outbound message to return a single move."""
+    websafe_game_key_for_move = messages.StringField(1)
+    websafe_user_key_for_move = messages.StringField(2)
+    row = messages.StringField(3)
+    col = messages.IntegerField(4)
+    status = messages.IntegerField(5)
+    sequence = messages.IntegerField(6)
+
+
+class ListOfMoves(messages.Message):
+    """Outbound message to return a list of moves."""
+    all_moves = messages.MessageField(SingleMoveForList, 1, repeated=True)
