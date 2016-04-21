@@ -7,12 +7,15 @@ Server-side Google App Engine API for Battleship Game; uses Google Cloud Endpoin
 
 import endpoints
 
+from google.appengine.ext import ndb
+
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
 from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
+from battle_containers import CANCEL_GAME_REQUEST
 
 from battle_messages import StringMessage
 
@@ -148,6 +151,46 @@ class BattleshipApi(remote.Service):
         a_new_game.put()
 
         return StringMessage(message='Game was successfully created!')
+
+#   @endpoints.method cancel_game ---------------------------------------------
+
+    @endpoints.method(CANCEL_GAME_REQUEST,
+                      StringMessage,
+                      name='cancel_game',
+                      path='gameCancel',
+                      http_method='POST'
+                      )
+    def cancel_game(self,
+                    request
+                    ):
+        """
+        Cancel a game that's in progress.
+        """
+        # Raise an exception if the game ID is blank.
+        if request.websafe_game_key is None:
+            raise endpoints.BadRequestException('Game ID cannot be blank.')
+
+        # Get Game from Datastore.
+        try:
+            current_game = ndb.Key(urlsafe=request.websafe_game_key).get()
+        except:
+            return StringMessage(message='Game does not exist.')
+
+        # Notify if the game is already in cancelled status.
+        if current_game.status == 2:
+            return StringMessage(message='Game is already cancelled.')
+
+        # Notify if the game is finished.
+        if current_game.status == 1:
+            return StringMessage(message='Game is already finished, cannot cancel.')
+
+        # Set the status of the game to cancelled.
+        current_game.status = 2
+
+        # Save the game.
+        current_game.put()
+
+        return StringMessage(message='Game was successfully cancelled.')
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

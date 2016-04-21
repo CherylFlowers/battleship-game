@@ -24,5 +24,5 @@ class Game(ndb.Model):
     user1 = ndb.StringProperty(required=True)
     user2 = ndb.StringProperty(required=True)
 
-    # 0 = In Progress, 1 = Finished
+    # 0 = In Progress, 1 = Finished, 2 = Cancelled
     status = ndb.IntegerProperty(required=True)

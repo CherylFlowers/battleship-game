@@ -23,6 +23,11 @@ class NewGame(messages.Message):
     a_username2 = messages.StringField(2)
 
 
+class CancelGame(messages.Message):
+    """Inbound request to cancel a game."""
+    a_game_id = messages.StringField(1)
+
+
 class StringMessage(messages.Message):
     """Outbound string message."""
     message = messages.StringField(1)
