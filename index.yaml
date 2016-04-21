@@ -10,3 +10,14 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Game
+  properties:
+  - name: status
+  - name: user1
+  - name: user2
+
+- kind: Game
+  properties:
+  - name: status
+  - name: user2
+  - name: user1

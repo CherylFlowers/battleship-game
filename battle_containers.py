@@ -14,6 +14,7 @@ from protorpc import remote
 from battle_messages import SingleUser
 from battle_messages import NewGame
 from battle_messages import CancelGame
+from battle_messages import GetUserGames
 
 
 USER_POST_REQUEST = endpoints.ResourceContainer(
@@ -30,4 +31,9 @@ NEW_GAME_REQUEST = endpoints.ResourceContainer(
 CANCEL_GAME_REQUEST = endpoints.ResourceContainer(
     CancelGame,
     websafe_game_key=messages.StringField(1, required=True),
+)
+
+GET_USER_GAMES_REQUEST = endpoints.ResourceContainer(
+    GetUserGames,
+    websafe_user_key=messages.StringField(1, required=True),
 )

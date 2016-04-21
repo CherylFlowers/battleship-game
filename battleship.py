@@ -16,8 +16,11 @@ from protorpc import remote
 from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
 from battle_containers import CANCEL_GAME_REQUEST
+from battle_containers import GET_USER_GAMES_REQUEST
 
 from battle_messages import StringMessage
+from battle_messages import ListOfGames
+from battle_messages import SingleGame
 
 from battle_models import User
 from battle_models import Game
@@ -74,6 +77,39 @@ class BattleshipApi(remote.Service):
         if User.query(User.user_name == user_to_get).get():
             return True
         return False
+
+#   _copyToGameList -----------------------------------------------------------
+
+    def _copyToGameList(self,
+                        game_to_copy
+                        ):
+        """
+        Populate the outbound game message with values from game_to_copy.
+
+        Args:
+            game_to_copy: the game object to copy to the outbound message
+
+        Returns:
+            an outbound message populated with info from game_to_copy arg
+        """
+        selected_game = SingleGame()
+
+        # Iterate through all fields in the game message.
+        for field in selected_game.all_fields():
+            # If a field in the game_to_copy arg matches a field in the
+            # game message, copy the value from the arg to the message.
+            if hasattr(game_to_copy, field.name):
+                setattr(selected_game, field.name,
+                        getattr(game_to_copy, field.name))
+            elif field.name == "websafeKey":
+                # Encode the key so it's suitable to embed in a URL.
+                setattr(selected_game, field.name, game_to_copy.key.urlsafe())
+
+        # Verify all values in the game message have been assigned a value.
+        selected_game.check_initialized()
+
+        # Return the updated game message.
+        return selected_game
 
 #   @endpoints.method create_user ---------------------------------------------
 
@@ -191,6 +227,37 @@ class BattleshipApi(remote.Service):
         current_game.put()
 
         return StringMessage(message='Game was successfully cancelled.')
+
+#   @endpoints.method get_user_games ------------------------------------------
+
+    @endpoints.method(GET_USER_GAMES_REQUEST,
+                      ListOfGames,
+                      name='get_user_games',
+                      path='gameGetUserGames',
+                      http_method='GET'
+                      )
+    def get_user_games(self,
+                       request
+                       ):
+        """Return all active games for a user."""
+        self._validateBlankUser(request.websafe_user_key, 'websafe_user_key')
+
+        # Get User from Datastore.
+        try:
+            selected_user = ndb.Key(urlsafe=request.websafe_user_key).get()
+        except:
+            raise endpoints.BadRequestException('User does not exist.')
+
+        # Get all games that are currently in progress for that user.
+        games = Game.query(ndb.AND(Game.status == 0,
+                                   ndb.OR(
+                                       Game.user1 == selected_user.user_name,
+                                       Game.user2 == selected_user.user_name)))
+        games = games.order(Game.user1, Game.user2)
+
+        return ListOfGames(
+            all_games=[self._copyToGameList(each_game) for each_game in games]
+        )
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API
