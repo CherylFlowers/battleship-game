@@ -26,6 +26,7 @@ from battle_messages import SingleGame
 from battle_models import User
 from battle_models import Game
 from battle_models import Move
+from battle_models import MoveSequence
 
 
 # CONSTS ----------------------------------------------------------------------
@@ -353,14 +354,24 @@ class BattleshipApi(remote.Service):
             # TODO
             # Once boats are implemented determine if the move has hit a boat.
 
+            internal_move_counter = MoveSequence.query().get()
+
+            if internal_move_counter is None:
+                internal_move_counter = MoveSequence(current_sequence=1)
+
             a_new_move = Move(
                 game_id=game_key,
                 user_id=user_key,
                 row=my_row,
                 col=my_col,
-                status=0  # miss
+                status=0,  # miss
+                sequence=internal_move_counter.current_sequence
             )
             a_new_move.put()
+
+            internal_move_counter.current_sequence += 1
+            internal_move_counter.put()
+
             return_message = 'That was a miss.'
 
         return StringMessage(message=return_message)

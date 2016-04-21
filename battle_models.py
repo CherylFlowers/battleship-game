@@ -37,3 +37,9 @@ class Move(ndb.Model):
 
     # 0 = miss, 1 = hit
     status = ndb.IntegerProperty(required=True)
+    sequence = ndb.IntegerProperty(required=True)
+
+
+class MoveSequence(ndb.Model):
+    """Keeps track of the sequence of moves."""
+    current_sequence = ndb.IntegerProperty(required=True)
