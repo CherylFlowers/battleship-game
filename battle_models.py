@@ -26,3 +26,14 @@ class Game(ndb.Model):
 
     # 0 = In Progress, 1 = Finished, 2 = Cancelled
     status = ndb.IntegerProperty(required=True)
+
+
+class Move(ndb.Model):
+    """A move made by a user."""
+    game_id = ndb.KeyProperty(kind='Game', required=True)
+    user_id = ndb.KeyProperty(kind='User', required=True)
+    row = ndb.StringProperty(required=True)
+    col = ndb.IntegerProperty(required=True)
+
+    # 0 = miss, 1 = hit
+    status = ndb.IntegerProperty(required=True)

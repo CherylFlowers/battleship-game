@@ -17,6 +17,7 @@ from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
 from battle_containers import CANCEL_GAME_REQUEST
 from battle_containers import GET_USER_GAMES_REQUEST
+from battle_containers import MOVE_POST_REQUEST
 
 from battle_messages import StringMessage
 from battle_messages import ListOfGames
@@ -24,6 +25,13 @@ from battle_messages import SingleGame
 
 from battle_models import User
 from battle_models import Game
+from battle_models import Move
+
+
+# CONSTS ----------------------------------------------------------------------
+
+VALID_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+VALID_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
 # @endpoints.api BattleshipApi ------------------------------------------------
@@ -58,6 +66,50 @@ class BattleshipApi(remote.Service):
             raise endpoints.BadRequestException(
                 '{} cannot be blank.'.format(custom_error_message))
         return True
+
+#   _validateAndGetGame -------------------------------------------------------
+
+    def _validateAndGetGame(self,
+                            websafe_game_to_validate
+                            ):
+        """
+        Validates that a game exists and returns the Game object.
+
+        Args:
+          websafe_game_to_validate: the url-safe key of the game.
+
+        Returns:
+          An error is raised if the game doesn't exist.
+          If the game exists then a Game object is returned.
+        """
+        try:
+            selected_game = ndb.Key(urlsafe=websafe_game_to_validate).get()
+        except:
+            raise endpoints.BadRequestException('Game does not exist.')
+
+        return selected_game
+
+#   _validateAndGetUser -------------------------------------------------------
+
+    def _validateAndGetUser(self,
+                            websafe_user_to_validate
+                            ):
+        """
+        Validates that a user exists and returns the User object.
+
+        Args:
+          websafe_user_to_validate: the url-safe key of the user.
+
+        Returns:
+          An error is raised if the user doesn't exist.
+          If the user exists then a User object is returned.
+        """
+        try:
+            selected_user = ndb.Key(urlsafe=websafe_user_to_validate).get()
+        except:
+            raise endpoints.BadRequestException('User does not exist.')
+
+        return selected_user
 
 #   _getUser ------------------------------------------------------------------
 
@@ -207,10 +259,7 @@ class BattleshipApi(remote.Service):
             raise endpoints.BadRequestException('Game ID cannot be blank.')
 
         # Get Game from Datastore.
-        try:
-            current_game = ndb.Key(urlsafe=request.websafe_game_key).get()
-        except:
-            return StringMessage(message='Game does not exist.')
+        current_game = self._validateAndGetGame(request.websafe_game_key)
 
         # Notify if the game is already in cancelled status.
         if current_game.status == 2:
@@ -243,10 +292,7 @@ class BattleshipApi(remote.Service):
         self._validateBlankUser(request.websafe_user_key, 'websafe_user_key')
 
         # Get User from Datastore.
-        try:
-            selected_user = ndb.Key(urlsafe=request.websafe_user_key).get()
-        except:
-            raise endpoints.BadRequestException('User does not exist.')
+        selected_user = self._validateAndGetUser(request.websafe_user_key)
 
         # Get all games that are currently in progress for that user.
         games = Game.query(ndb.AND(Game.status == 0,
@@ -258,6 +304,66 @@ class BattleshipApi(remote.Service):
         return ListOfGames(
             all_games=[self._copyToGameList(each_game) for each_game in games]
         )
+
+#   @endpoints.method make_move -----------------------------------------------
+
+    @endpoints.method(MOVE_POST_REQUEST,
+                      StringMessage,
+                      name='make_move',
+                      path='gameMakeMove',
+                      http_method='POST'
+                      )
+    def make_move(self,
+                  request
+                  ):
+        """Make a move. Requires game ID, user ID, row and col."""
+
+        # Validate that the game exists and get Game object.
+        current_game = self._validateAndGetGame(request.websafe_game_key)
+
+        # Validate that the user exists and get User object.
+        selected_user = self._validateAndGetUser(request.websafe_user_key)
+
+        # Validate the row.
+        my_row = request.row.upper()
+
+        if my_row not in VALID_ROWS:
+            raise endpoints.BadRequestException(
+                'That was not a valid row. Valid rows are one of the following: ABCDEFGHIJ.')
+
+        # Validate the column.
+        my_col = int(request.col)
+
+        if my_col not in VALID_COLS:
+            raise endpoints.BadRequestException(
+                'That was not a valid column. Valid columns are 1-10 inclusive.')
+
+        return_message = ''
+
+        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+        user_key = ndb.Key(urlsafe=request.websafe_user_key)
+
+        if Move.query(ndb.AND(Move.game_id == game_key,
+                              Move.user_id == user_key,
+                              Move.row == my_row,
+                              Move.col == my_col
+                              )).get():
+            return_message = 'Whoops! You already made that move.'
+        else:
+            # TODO
+            # Once boats are implemented determine if the move has hit a boat.
+
+            a_new_move = Move(
+                game_id=game_key,
+                user_id=user_key,
+                row=my_row,
+                col=my_col,
+                status=0  # miss
+            )
+            a_new_move.put()
+            return_message = 'That was a miss.'
+
+        return StringMessage(message=return_message)
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

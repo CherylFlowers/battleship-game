@@ -36,6 +36,14 @@ class GetUserGames(messages.Message):
     a_user_id = messages.StringField(1)
 
 
+class SingleMove(messages.Message):
+    """Inbound request to make a move."""
+    a_game_id = messages.StringField(1)
+    a_user_id = messages.StringField(2)
+    a_row = messages.StringField(3)
+    a_col = messages.IntegerField(4)
+
+
 #   Outbound Response ---------------------------------------------------------
 
 
