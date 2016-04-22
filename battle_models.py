@@ -21,8 +21,8 @@ class User(ndb.Model):
 
 class Game(ndb.Model):
     """A game with 2 users and the status."""
-    user1 = ndb.StringProperty(required=True)
-    user2 = ndb.StringProperty(required=True)
+    user1 = ndb.KeyProperty(kind='User', required=True)
+    user2 = ndb.KeyProperty(kind='User', required=True)
 
     # 0 = In Progress, 1 = Finished, 2 = Cancelled
     status = ndb.IntegerProperty(required=True)

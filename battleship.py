@@ -243,38 +243,36 @@ class BattleshipApi(remote.Service):
         """
         Create a new game.
         """
-        # Ensure the users are not blank.
-        self._validateBlankUser(request.username1, 'username1')
-        self._validateBlankUser(request.username2, 'username2')
+        user1_key = ndb.Key(urlsafe=request.websafe_username1_key)
+        user2_key = ndb.Key(urlsafe=request.websafe_username2_key)
 
         # Ensure the users exist in the database.
-        if not self._getUser(request.username1):
+        if not user1_key.get():
             raise endpoints.BadRequestException(
-                '{} does not exist.'.format(request.username1))
+                'websafe_username1_key does not exist.')
 
-        if not self._getUser(request.username2):
+        if not user2_key.get():
             raise endpoints.BadRequestException(
-                '{} does not exist.'.format(request.username2))
+                'websafe_username2_key does not exist.')
 
         # Ensure the users are not the same.
-        if (request.username1 == request.username2):
+        if (request.websafe_username1_key == request.websafe_username2_key):
             raise endpoints.BadRequestException('Users cannot be the same.')
 
         # Ensure a game is not already in progress.
-        q = Game.query(Game.user1.IN([request.username1, request.username2]),
-                       Game.user2.IN([request.username1, request.username2]),
+        q = Game.query(Game.user1.IN([user1_key, user2_key]),
+                       Game.user2.IN([user1_key, user2_key]),
                        Game.status == 0  # In Progress
                        ).count()
 
         if q > 0:
             raise endpoints.BadRequestException(
-                'A game is currently in progress for {} and {}.'.format(
-                    request.username1, request.username2))
+                'A game is currently in progress for these users.')
 
         # Create a new game.
         a_new_game = Game(
-            user1=request.username1,
-            user2=request.username2,
+            user1=user1_key,
+            user2=user2_key,
             status=0,  # In Progress
         )
         a_new_game.put()

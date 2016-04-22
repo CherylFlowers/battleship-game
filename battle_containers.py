@@ -30,8 +30,8 @@ USER_POST_REQUEST = endpoints.ResourceContainer(
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(
     NewGame,
-    username1=messages.StringField(1, required=True),
-    username2=messages.StringField(2, required=True),
+    websafe_username1_key=messages.StringField(1, required=True),
+    websafe_username2_key=messages.StringField(2, required=True),
 )
 
 
