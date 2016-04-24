@@ -35,9 +35,12 @@ class Move(ndb.Model):
     row = ndb.StringProperty(required=True)
     col = ndb.IntegerProperty(required=True)
 
-    # 0 = miss, 1 = hit
+    # 0 = miss, 1 = hit, 2 = duplicate move
     status = ndb.IntegerProperty(required=True)
     sequence = ndb.IntegerProperty(required=True)
+    hits = ndb.IntegerProperty(required=True)
+    miss = ndb.IntegerProperty(required=True)
+    sunk = ndb.IntegerProperty(required=True)
 
 
 class MoveSequence(ndb.Model):

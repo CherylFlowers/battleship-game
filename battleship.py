@@ -19,12 +19,14 @@ from battle_containers import CANCEL_GAME_REQUEST
 from battle_containers import GET_USER_GAMES_REQUEST
 from battle_containers import MOVE_POST_REQUEST
 from battle_containers import GET_GAME_HISTORY_REQUEST
+from battle_containers import GET_GAME_STATE
 
 from battle_messages import StringMessage
 from battle_messages import ListOfGames
 from battle_messages import SingleGame
 from battle_messages import ListOfMoves
 from battle_messages import SingleMoveForList
+from battle_messages import ReturnGameState
 
 from battle_models import User
 from battle_models import Game
@@ -204,6 +206,63 @@ class BattleshipApi(remote.Service):
         # Return the updated move message.
         return selected_move
 
+#   _getUsersLastMove ---------------------------------------------------------
+
+    def _getUsersLastMove(self,
+                          game_key,
+                          user_key
+                          ):
+        """
+        Return the last move that the user made in a specific game.
+
+        Args:
+          game_key: the key of the game that the user is playing.
+          user_key: the key of the user to get the move for.
+
+        Returns:
+          A Move object.
+        """
+        return Move.query(Move.game_id == game_key,
+                          Move.user_id == user_key).order(-Move.sequence).get()
+
+#   _getGameStateForUser ------------------------------------------------------
+
+    def _getGameStateForUser(self,
+                             game_key,
+                             selected_game,
+                             user_to_get
+                             ):
+        """
+        Get the game state for a user for a selected game.
+
+        Args:
+          game_key: the key of the game.
+          selected_game: the Game object.
+          user_to_get: an integer indicating which user to get the state for.
+
+        Returns:
+          A string in the format; <username> : Hits <x> : Miss <x> : Sunk <x>
+        """
+        # Using the game info, get the user key.
+        if user_to_get == 1:
+            user_key = selected_game.user1
+            websafe_user_key = selected_game.user1.urlsafe()
+        else:
+            user_key = selected_game.user2
+            websafe_user_key = selected_game.user2.urlsafe()
+
+        # Get the last user move. The move contains the sum
+        # of hits, misses and sunk boats.
+        last_user_move = self._getUsersLastMove(game_key, user_key)
+
+        # Need to get the users' name.
+        user_profile = self._validateAndGetUser(websafe_user_key)
+
+        if last_user_move is None:
+            return user_profile.user_name + ' has not made any moves yet.'
+
+        return 'User ' + str(user_profile.user_name) + ' : Hits ' + str(last_user_move.hits) + ' : Miss ' + str(last_user_move.miss) + ' : Sunk ' + str(last_user_move.sunk)
+
 #   @endpoints.method create_user ---------------------------------------------
 
     @endpoints.method(USER_POST_REQUEST,
@@ -382,35 +441,64 @@ class BattleshipApi(remote.Service):
         game_key = ndb.Key(urlsafe=request.websafe_game_key)
         user_key = ndb.Key(urlsafe=request.websafe_user_key)
 
+        # Get the next move sequence. The sequence is used to generate
+        # the game history.
+        internal_move_counter = MoveSequence.query().get()
+
+        if internal_move_counter is None:
+            # If this is the first time the sequence counter is
+            # being used, init it to 1.
+            internal_move_counter = MoveSequence(current_sequence=1)
+
+        # Query the Move kind for the last move for the user.
+        # The Move kind stores a running total of hits, miss and sunk.
+        # Use/increment these values for the next move.
+        last_user_move = self._getUsersLastMove(game_key, user_key)
+
+        if last_user_move is None:
+            last_user_move = Move(hits=0, miss=0, sunk=0)
+
+        a_new_move = Move(
+            game_id=game_key,
+            user_id=user_key,
+            row=my_row,
+            col=my_col,
+            status=0,
+            hits=last_user_move.hits,
+            miss=last_user_move.miss,
+            sunk=last_user_move.sunk,
+            sequence=internal_move_counter.current_sequence
+        )
+
         if Move.query(ndb.AND(Move.game_id == game_key,
                               Move.user_id == user_key,
                               Move.row == my_row,
                               Move.col == my_col
                               )).get():
+            # Don't increment the hits, miss or sunk here,
+            # they have already been accounted for.
+            a_new_move.status = 2  # duplicate move
             return_message = 'Whoops! You already made that move.'
         else:
             # TODO
             # Once boats are implemented determine if the move has hit a boat.
+            # Also increment the sunk counter if applicable.
+            # a_new_move.status = 1  # hit
+            # a_new_move.hits += 1
+            # a_new_move.sunk += 1
+            # return_message = 'That was a hit!'
+            # return_message = 'You sunk the {}!'.format(name_of_ship)
 
-            internal_move_counter = MoveSequence.query().get()
-
-            if internal_move_counter is None:
-                internal_move_counter = MoveSequence(current_sequence=1)
-
-            a_new_move = Move(
-                game_id=game_key,
-                user_id=user_key,
-                row=my_row,
-                col=my_col,
-                status=0,  # miss
-                sequence=internal_move_counter.current_sequence
-            )
-            a_new_move.put()
-
-            internal_move_counter.current_sequence += 1
-            internal_move_counter.put()
-
+            a_new_move.status = 0  # miss
+            a_new_move.miss += 1
             return_message = 'That was a miss.'
+
+        # Save the Move.
+        a_new_move.put()
+
+        # Increment the sequence and save that too.
+        internal_move_counter.current_sequence += 1
+        internal_move_counter.put()
 
         return StringMessage(message=return_message)
 
@@ -440,6 +528,38 @@ class BattleshipApi(remote.Service):
         return ListOfMoves(
             all_moves=[self._copyToMoveList(each_move) for each_move in moves]
         )
+
+#   @endpoints.method get_game ------------------------------------------------
+
+    @endpoints.method(GET_GAME_STATE,
+                      ReturnGameState,
+                      name='get_game',
+                      path='gameGetState',
+                      http_method='GET'
+                      )
+    def get_game(self,
+                 request
+                 ):
+        """Returns the current state of the game ie. Username : Hits 3 : Miss 12 : Sunk 0"""
+
+        # Get the game info and the game key.
+        selected_game = self._validateAndGetGame(request.websafe_game_key)
+        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+
+        user_states = []
+
+        # Get game state for user 1.
+        user_states.append(self._getGameStateForUser(
+            game_key, selected_game, 1))
+
+        # Get game state for user 2.
+        user_states.append(self._getGameStateForUser(
+            game_key, selected_game, 2))
+
+        # Return the pre-formatted state messages.
+        # return ReturnGameState(user_states=[StringMessage(each_state) for
+        # each_state in user_states])
+        return ReturnGameState(user_states=[StringMessage(message=each_state) for each_state in user_states])
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

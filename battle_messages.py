@@ -49,6 +49,11 @@ class GameHistory(messages.Message):
     a_game_id = messages.StringField(1)
 
 
+class GetGameState(messages.Message):
+    """Inbound request for the current state of a game."""
+    a_game_id = messages.StringField(1)
+
+
 #   Outbound Response ---------------------------------------------------------
 
 
@@ -83,3 +88,8 @@ class SingleMoveForList(messages.Message):
 class ListOfMoves(messages.Message):
     """Outbound message to return a list of moves."""
     all_moves = messages.MessageField(SingleMoveForList, 1, repeated=True)
+
+
+class ReturnGameState(messages.Message):
+    """Outbound response to return the state of a game for a user."""
+    user_states = messages.MessageField(StringMessage, 1, repeated=True)

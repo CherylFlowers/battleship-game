@@ -26,3 +26,10 @@ indexes:
   properties:
   - name: game_id
   - name: sequence
+
+- kind: Move
+  properties:
+  - name: game_id
+  - name: user_id
+  - name: sequence
+    direction: desc
