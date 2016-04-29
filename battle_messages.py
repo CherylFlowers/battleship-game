@@ -116,3 +116,8 @@ class SingleBoatForList(messages.Message):
 class ListOfBoats(messages.Message)	:
     """Outbound message to return a list of boats."""
     all_boats = messages.MessageField(SingleBoatForList, 1, repeated=True)
+
+
+class ListOfRankings(messages.Message):
+    """Outbound message to return a list of user rankings."""
+    rankings = messages.MessageField(StringMessage, 1, repeated=True)

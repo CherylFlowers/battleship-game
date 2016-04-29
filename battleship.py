@@ -31,6 +31,7 @@ from battle_messages import SingleMoveForList
 from battle_messages import ReturnGameState
 from battle_messages import SingleBoatForList
 from battle_messages import ListOfBoats
+from battle_messages import ListOfRankings
 
 from battle_models import User
 from battle_models import Game
@@ -465,6 +466,23 @@ class BattleshipApi(remote.Service):
 
         return user_score
 
+#   _getUserScoreMessage ------------------------------------------------------
+
+    def _getUserScoreMessage(self,
+                             user_score,
+                             ):
+        """
+        Generate a message with the users wins/losses.
+
+        Args:
+          user_score: a tuple with the games won[0], games lost[1], username[2]
+                      this can be generated via _getUserScore.
+
+        Returns:
+          a string in the format; <username> : Wins <x> : Losses <x>
+        """
+        return user_score[0] + ' : Wins ' + str(user_score[1]) + ' : Losses ' + str(user_score[2])
+
 #   @endpoints.method create_user ---------------------------------------------
 
     @endpoints.method(USER_POST_REQUEST,
@@ -873,7 +891,48 @@ class BattleshipApi(remote.Service):
                        ):
         """Get the number of games that a user has won and lost."""
         user_score = self._getUserScore(request.websafe_user_key)
-        return StringMessage(message=user_score[0] + ' : Wins ' + str(user_score[1]) + ' : Losses ' + str(user_score[2]))
+        return StringMessage(message=self._getUserScoreMessage(user_score))
+
+#   @endpoints.method get_user_rankings ---------------------------------------
+
+    @endpoints.method(message_types.VoidMessage,
+                      ListOfRankings,
+                      name='get_user_rankings',
+                      path='getUserRankings',
+                      http_method='GET'
+                      )
+    def get_user_rankings(self,
+                          request
+                          ):
+        """Get a list of users ordered by wins/losses."""
+        all_rankings = []
+
+        # Get a list of all users.
+        all_users = User.query()
+
+        # Iterate through the users.
+        for each_user in all_users:
+            # Get the users' score.
+            single_rank = self._getUserScore(each_user.key.urlsafe())
+
+            # Only include the user if they've actually played a game.
+            if (single_rank[1] == 0) and (single_rank[2] == 0):
+                continue
+
+            # Save the score to the main list.
+            all_rankings.append(single_rank)
+
+        # Sort the list by losses ascending first ie. loss 1, loss 5, loss 8
+        all_rankings = sorted(all_rankings,
+                              key=itemgetter(2))
+
+        # Then sort it by wins descending ie. wins 10, wins 2, wins 1
+        all_rankings = sorted(all_rankings,
+                              key=itemgetter(1),
+                              reverse=True)
+
+        # Return the user rankings.
+        return ListOfRankings(rankings=[StringMessage(message=self._getUserScoreMessage(each_rank)) for each_rank in all_rankings])
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API
