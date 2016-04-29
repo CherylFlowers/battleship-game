@@ -60,6 +60,11 @@ class GetBoatList(messages.Message):
     a_user_id = messages.StringField(2)
 
 
+class GetSingleUserScore(messages.Message):
+    """Inbound request for a single users' wins and losses."""
+    a_user_id = messages.StringField(1)
+
+
 #   Outbound Response ---------------------------------------------------------
 
 

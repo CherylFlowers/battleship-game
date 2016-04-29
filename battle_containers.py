@@ -19,6 +19,7 @@ from battle_messages import SingleMove
 from battle_messages import GameHistory
 from battle_messages import GetGameState
 from battle_messages import GetBoatList
+from battle_messages import GetSingleUserScore
 
 
 #   POST Requests -------------------------------------------------------------
@@ -76,4 +77,9 @@ GET_BOAT_LIST = endpoints.ResourceContainer(
     GetBoatList,
     websafe_game_key=messages.StringField(1, required=True),
     websafe_user_key=messages.StringField(2, required=True),
+)
+
+GET_USER_SCORE = endpoints.ResourceContainer(
+    GetSingleUserScore,
+    websafe_user_key=messages.StringField(1, required=True),
 )

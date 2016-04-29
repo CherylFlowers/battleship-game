@@ -21,6 +21,7 @@ from battle_containers import MOVE_POST_REQUEST
 from battle_containers import GET_GAME_HISTORY_REQUEST
 from battle_containers import GET_GAME_STATE
 from battle_containers import GET_BOAT_LIST
+from battle_containers import GET_USER_SCORE
 
 from battle_messages import StringMessage
 from battle_messages import ListOfGames
@@ -430,6 +431,40 @@ class BattleshipApi(remote.Service):
 
         return True
 
+#   _getUserScore -------------------------------------------------------------
+
+    def _getUserScore(self,
+                      websafe_user_key
+                      ):
+        """
+        Determine the total number of games that a user has won or lost.
+
+        Args:
+          websafe_user_key: the user to search for
+
+        Returns:
+          a tuple with the use rname[0], games won[1] and games lost[2]
+        """
+
+        # Validate that the user exists and get User object.
+        selected_user = self._validateAndGetUser(websafe_user_key)
+
+        # Get the user key.
+        user_key = ndb.Key(urlsafe=websafe_user_key)
+
+        # Get games the user won.
+        games_won = Game.query(ndb.AND(Game.status == 1, Game.winner == user_key, ndb.OR(
+            Game.user1 == user_key, Game.user2 == user_key))).count()
+
+        # Get games the user lost.
+        games_lost = Game.query(ndb.AND(Game.status == 1, Game.winner != user_key, ndb.OR(
+            Game.user1 == user_key, Game.user2 == user_key))).count()
+
+        # Create a tuple with the username, wins and losses.
+        user_score = (selected_user.user_name, games_won, games_lost)
+
+        return user_score
+
 #   @endpoints.method create_user ---------------------------------------------
 
     @endpoints.method(USER_POST_REQUEST,
@@ -824,6 +859,21 @@ class BattleshipApi(remote.Service):
                                Boat.user_id == user_key).order(Boat.boat_type, Boat.col, Boat.row)
 
         return ListOfBoats(all_boats=[self._copyToBoatList(each_boat) for each_boat in boat_list])
+
+#   @endpoints.method get_user_scores -----------------------------------------
+
+    @endpoints.method(GET_USER_SCORE,
+                      StringMessage,
+                      name='get_user_score',
+                      path='getUserScore',
+                      http_method='GET'
+                      )
+    def get_user_score(self,
+                       request
+                       ):
+        """Get the number of games that a user has won and lost."""
+        user_score = self._getUserScore(request.websafe_user_key)
+        return StringMessage(message=user_score[0] + ' : Wins ' + str(user_score[1]) + ' : Losses ' + str(user_score[2]))
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

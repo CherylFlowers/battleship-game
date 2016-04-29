@@ -41,3 +41,15 @@ indexes:
   - name: boat_type
   - name: col
   - name: row
+
+- kind: Game
+  properties:
+  - name: status
+  - name: user1
+  - name: winner
+
+- kind: Game
+  properties:
+  - name: status
+  - name: user2
+  - name: winner

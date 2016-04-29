@@ -26,6 +26,7 @@ class Game(ndb.Model):
 
     # 0 = In Progress, 1 = Finished, 2 = Cancelled
     status = ndb.IntegerProperty(required=True)
+    winner = ndb.KeyProperty(kind='User')
 
 
 class Move(ndb.Model):
