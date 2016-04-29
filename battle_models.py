@@ -46,3 +46,14 @@ class Move(ndb.Model):
 class MoveSequence(ndb.Model):
     """Keeps track of the sequence of moves."""
     current_sequence = ndb.IntegerProperty(required=True)
+
+
+class Boat(ndb.Model):
+    """A boat on a users board."""
+    game_id = ndb.KeyProperty(kind='Game', required=True)
+    user_id = ndb.KeyProperty(kind='User', required=True)
+
+    # 0 = CARRIER, 1 = BATTLESHIP, 2 = SUBMARINE, 3 = DESTROYER, 4 = PATROL
+    boat_type = ndb.IntegerProperty(required=True)
+    row = ndb.StringProperty(required=True)
+    col = ndb.IntegerProperty(required=True)

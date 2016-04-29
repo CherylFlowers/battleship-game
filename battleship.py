@@ -32,12 +32,32 @@ from battle_models import User
 from battle_models import Game
 from battle_models import Move
 from battle_models import MoveSequence
+from battle_models import Boat
+
+from random import randint
+import string
+from operator import itemgetter
+from itertools import groupby
 
 
 # CONSTS ----------------------------------------------------------------------
 
 VALID_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 VALID_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+CARRIER = 0
+BATTLESHIP = 1
+SUBMARINE = 2
+DESTROYER = 3
+PATROL = 4
+
+CARRIER_HITS = 5
+BATTLESHIP_HITS = 4
+SUBMARINE_HITS = 3
+DESTROYER_HITS = 3
+PATROL_HITS = 2
+
+BOARD_ROWS = "ABCDEFGHIJ"
 
 
 # @endpoints.api BattleshipApi ------------------------------------------------
@@ -263,6 +283,120 @@ class BattleshipApi(remote.Service):
 
         return 'User ' + str(user_profile.user_name) + ' : Hits ' + str(last_user_move.hits) + ' : Miss ' + str(last_user_move.miss) + ' : Sunk ' + str(last_user_move.sunk)
 
+#   _buildBoard ---------------------------------------------------------------
+
+    def _buildBoard(self):
+        """
+        Build a 10x10 board.
+
+        Returns:
+          A list of tuples representing a blank 10x10 board.
+        """
+        x = 1
+        y = 1
+        master_coord = []
+
+        for x in range(1, 11):
+            for y in range(1, 11):
+                single_coord = [x, y]
+                master_coord.append(single_coord)
+                y += 1
+            x += 1
+
+        return master_coord
+
+#   _addBoat ------------------------------------------------------------------
+
+    def _addBoat(self,
+                 game_key,
+                 user_key,
+                 master_coord,
+                 boat_type,
+                 boat_hits
+                 ):
+        """
+        Add a boat to a users' board.
+
+        Args:
+          game_key: the key of the game that's being played.
+          user_key: the key of the user that's playing.
+          master_coord: the co-ordinates that are still available.
+          boat_type: the type of boat that's being added.
+          boat_hits: the number of hits to sink the boat.
+
+        Returns:
+          True if the boat was successfully added to the players' board.
+        """
+        # Determine if the boat should be placed horizontal or vertical.
+        direction = randint(0, 1)
+
+        if direction == 0:
+            list_value = 1
+        else:
+            list_value = 0
+
+        # Grab a starting point for the boat.
+        # If direction = 0 then start_point is a row
+        # If direction = 1 then start_point is a col
+        start_point = randint(1, 10)
+
+        # Search the master list for all open coords on
+        # the start_point (row or col).
+        available_coord = []
+
+        for mc in range(0, len(master_coord)):
+            if master_coord[mc][direction] == start_point:
+                available_coord.append(master_coord[mc][list_value])
+
+        # Sort the coordinates so it's easier to find a group of coords.
+        available_coord.sort()
+
+        # Determine if the ranges in the available_coord are large
+        # enough to hold the boat.
+        #   enumerate(available_coord) - attach an incrementing index to each coord
+        # lambda (i, x): i - x) - subtract the element index from the element
+        # value
+        for key, group in groupby(enumerate(available_coord), lambda (i, x): i - x):
+            group = map(itemgetter(1), group)
+            if len(group) >= boat_hits:
+                boat_coord = group
+                break
+
+        # TODO - implement the following logic.
+        # If boat_coord is None, then it means that the boat cannot
+        # fit on this row/col. Start over and find a new set of coords.
+
+        # Add the boat coordinates to the Boat table.
+        for each_coord in range(0, len(boat_coord)):
+            if each_coord + 1 > boat_hits:
+                break
+
+            if direction == 0:
+                boat_row = start_point
+                boat_col = boat_coord[each_coord]
+            else:
+                boat_row = boat_coord[each_coord]
+                boat_col = start_point
+
+            new_boat = Boat(
+                game_id=game_key,
+                user_id=user_key,
+                boat_type=boat_type,
+                row=BOARD_ROWS[boat_row],
+                col=boat_col
+            )
+            new_boat.put()
+
+            new_boat_coord = (new_boat.row, new_boat.col)
+
+            # Remove coords from master coord so they can't be used again.
+            for mc in range(0, len(master_coord)):
+                if master_coord[mc] == new_boat_coord:
+                    del master_coord[mc]
+                    break
+
+        return True
+
 #   @endpoints.method create_user ---------------------------------------------
 
     @endpoints.method(USER_POST_REQUEST,
@@ -334,7 +468,77 @@ class BattleshipApi(remote.Service):
             user2=user2_key,
             status=0,  # In Progress
         )
-        a_new_game.put()
+        game_key = a_new_game.put()
+
+        # Auto-generate all boats on user 1's board.
+
+        # Get a list of all available co-ords on the board.
+        master_coord_user1 = self._buildBoard()
+
+        self._addBoat(game_key,
+                      user1_key,
+                      master_coord_user1,
+                      CARRIER,
+                      CARRIER_HITS)
+
+        self._addBoat(game_key,
+                      user1_key,
+                      master_coord_user1,
+                      BATTLESHIP,
+                      BATTLESHIP_HITS)
+
+        self._addBoat(game_key,
+                      user1_key,
+                      master_coord_user1,
+                      SUBMARINE,
+                      SUBMARINE_HITS)
+
+        self._addBoat(game_key,
+                      user1_key,
+                      master_coord_user1,
+                      DESTROYER,
+                      DESTROYER_HITS)
+
+        self._addBoat(game_key,
+                      user1_key,
+                      master_coord_user1,
+                      PATROL,
+                      PATROL_HITS)
+
+        # Auto-generate all boats on user 2's board.
+
+        # Get a list of all available co-ords on the board.
+        master_coord_user2 = self._buildBoard()
+
+        self._addBoat(game_key,
+                      user2_key,
+                      master_coord_user2,
+                      CARRIER,
+                      CARRIER_HITS)
+
+        self._addBoat(game_key,
+                      user2_key,
+                      master_coord_user2,
+                      BATTLESHIP,
+                      BATTLESHIP_HITS)
+
+        self._addBoat(game_key,
+                      user2_key,
+                      master_coord_user2,
+                      SUBMARINE,
+                      SUBMARINE_HITS)
+
+        self._addBoat(game_key,
+                      user2_key,
+                      master_coord_user2,
+                      DESTROYER,
+                      DESTROYER_HITS)
+
+        self._addBoat(game_key,
+                      user2_key,
+                      master_coord_user2,
+                      PATROL,
+                      PATROL_HITS)
 
         return StringMessage(message='Game was successfully created!')
 
