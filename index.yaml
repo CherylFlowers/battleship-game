@@ -33,3 +33,11 @@ indexes:
   - name: user_id
   - name: sequence
     direction: desc
+
+- kind: Boat
+  properties:
+  - name: game_id
+  - name: user_id
+  - name: boat_type
+  - name: col
+  - name: row

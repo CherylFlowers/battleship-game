@@ -20,6 +20,7 @@ from battle_containers import GET_USER_GAMES_REQUEST
 from battle_containers import MOVE_POST_REQUEST
 from battle_containers import GET_GAME_HISTORY_REQUEST
 from battle_containers import GET_GAME_STATE
+from battle_containers import GET_BOAT_LIST
 
 from battle_messages import StringMessage
 from battle_messages import ListOfGames
@@ -27,6 +28,8 @@ from battle_messages import SingleGame
 from battle_messages import ListOfMoves
 from battle_messages import SingleMoveForList
 from battle_messages import ReturnGameState
+from battle_messages import SingleBoatForList
+from battle_messages import ListOfBoats
 
 from battle_models import User
 from battle_models import Game
@@ -225,6 +228,36 @@ class BattleshipApi(remote.Service):
 
         # Return the updated move message.
         return selected_move
+
+#   _copyToBoatList -----------------------------------------------------------
+
+    def _copyToBoatList(self,
+                        boat_to_copy
+                        ):
+        """
+        Populate the outbound boat message with values from boat_to_copy.
+
+        Args:
+            boat_to_copy: the boat object to copy to the outbound message
+
+        Returns:
+            an outbound message populated with info from boat_to_copy arg
+        """
+        selected_boat = SingleBoatForList()
+
+        # Iterate through all fields in the boat message.
+        for field in selected_boat.all_fields():
+            # If a field in the boat_to_copy arg matches a field in the
+            # boat message, copy the value from the arg to the message.
+            if hasattr(boat_to_copy, field.name):
+                setattr(selected_boat, field.name,
+                        getattr(boat_to_copy, field.name))
+
+        # Verify all values in the boat message have been assigned a value.
+        selected_boat.check_initialized()
+
+        # Return the updated boat message.
+        return selected_boat
 
 #   _getUsersLastMove ---------------------------------------------------------
 
@@ -764,6 +797,33 @@ class BattleshipApi(remote.Service):
         # return ReturnGameState(user_states=[StringMessage(each_state) for
         # each_state in user_states])
         return ReturnGameState(user_states=[StringMessage(message=each_state) for each_state in user_states])
+
+#   @endpoints.method get_user_boats ------------------------------------------
+
+    @endpoints.method(GET_BOAT_LIST,
+                      ListOfBoats,
+                      name='get_user_boats',
+                      path='getUserBoats',
+                      http_method='GET'
+                      )
+    def get_user_boats(self,
+                       request
+                       ):
+        """Get a list of a users' boat coordinates for a game."""
+
+        # Get the game key.
+        self._validateAndGetGame(request.websafe_game_key)
+        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+
+        # Get the user key.
+        self._validateAndGetUser(request.websafe_user_key)
+        user_key = ndb.Key(urlsafe=request.websafe_user_key)
+
+        # Grab all the boat coords for this user for the game.
+        boat_list = Boat.query(Boat.game_id == game_key,
+                               Boat.user_id == user_key).order(Boat.boat_type, Boat.col, Boat.row)
+
+        return ListOfBoats(all_boats=[self._copyToBoatList(each_boat) for each_boat in boat_list])
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API

@@ -54,6 +54,12 @@ class GetGameState(messages.Message):
     a_game_id = messages.StringField(1)
 
 
+class GetBoatList(messages.Message):
+    """Inbound request for a list of the users' boat coordinates."""
+    a_game_id = messages.StringField(1)
+    a_user_id = messages.StringField(2)
+
+
 #   Outbound Response ---------------------------------------------------------
 
 
@@ -93,3 +99,15 @@ class ListOfMoves(messages.Message):
 class ReturnGameState(messages.Message):
     """Outbound response to return the state of a game for a user."""
     user_states = messages.MessageField(StringMessage, 1, repeated=True)
+
+
+class SingleBoatForList(messages.Message):
+    """Outbound message to return a single boat."""
+    boat_type = messages.IntegerField(1)
+    row = messages.StringField(2)
+    col = messages.IntegerField(3)
+
+
+class ListOfBoats(messages.Message)	:
+    """Outbound message to return a list of boats."""
+    all_boats = messages.MessageField(SingleBoatForList, 1, repeated=True)
