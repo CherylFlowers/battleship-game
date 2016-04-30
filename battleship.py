@@ -361,76 +361,94 @@ class BattleshipApi(remote.Service):
 
         Returns:
           True if the boat was successfully added to the players' board.
+          False if the boat could not be added. Will attempt 5 times.
         """
-        # Determine if the boat should be placed horizontal or vertical.
-        direction = randint(0, 1)
+        # Attempt to place the boat on the users' board. Since this method is
+        # using random rows and cols it may eventually come into conflict with
+        # another boat. If that's the case, the method will try up to 5 times
+        # to reposition the new boat on the board (for sanity sake). If it's
+        # still unsuccessful then the method will return false.
+        for iBoatAttempts in range(0, 6):
+            # Determine if the boat should be placed horizontal or vertical.
+            direction = randint(0, 1)
 
-        if direction == 0:
-            list_value = 1
-        else:
-            list_value = 0
-
-        # Grab a starting point for the boat.
-        # If direction = 0 then start_point is a row
-        # If direction = 1 then start_point is a col
-        start_point = randint(1, 10)
-
-        # Search the master list for all open coords on
-        # the start_point (row or col).
-        available_coord = []
-
-        for mc in range(0, len(master_coord)):
-            if master_coord[mc][direction] == start_point:
-                available_coord.append(master_coord[mc][list_value])
-
-        # Sort the coordinates so it's easier to find a group of coords.
-        available_coord.sort()
-
-        # Determine if the ranges in the available_coord are large
-        # enough to hold the boat.
-        #   enumerate(available_coord) - attach an incrementing index to each coord
-        # lambda (i, x): i - x) - subtract the element index from the element
-        # value
-        for key, group in groupby(enumerate(available_coord), lambda (i, x): i - x):
-            group = map(itemgetter(1), group)
-            if len(group) >= boat_hits:
-                boat_coord = group
-                break
-
-        # TODO - implement the following logic.
-        # If boat_coord is None, then it means that the boat cannot
-        # fit on this row/col. Start over and find a new set of coords.
-
-        # Add the boat coordinates to the Boat table.
-        for each_coord in range(0, len(boat_coord)):
-            if each_coord + 1 > boat_hits:
-                break
-
+            # The list_value will be opposite of the direction value as it
+            # will be retrieving the available coordinates for the boat.
             if direction == 0:
-                boat_row = start_point
-                boat_col = boat_coord[each_coord]
+                list_value = 1
             else:
-                boat_row = boat_coord[each_coord]
-                boat_col = start_point
+                list_value = 0
 
-            new_boat = Boat(
-                game_id=game_key,
-                user_id=user_key,
-                boat_type=boat_type,
-                row=BOARD_ROWS[boat_row],
-                col=boat_col
-            )
-            new_boat.put()
+            # Grab a starting point for the boat.
+            # If direction = 0 then start_point is a row
+            # If direction = 1 then start_point is a col
+            start_point = randint(1, 10)
 
-            new_boat_coord = (new_boat.row, new_boat.col)
+            # Search the master list for all open coords on
+            # the start_point (row or col).
+            available_coord = []
 
-            # Remove coords from master coord so they can't be used again.
             for mc in range(0, len(master_coord)):
-                if master_coord[mc] == new_boat_coord:
-                    del master_coord[mc]
+                if master_coord[mc][direction] == start_point:
+                    available_coord.append(master_coord[mc][list_value])
+
+            # Sort the coordinates so it's easier to find a group of coords.
+            available_coord.sort()
+
+            # Determine if the ranges in the available_coord are large
+            # enough to hold the boat.
+            #   enumerate(available_coord) - attach an incrementing index to each coord
+            #   lambda (i, x): i - x) - subtract the element index from the element
+            #   value to determine grouping characteristics
+
+            boat_coord = []
+
+            for key, group in groupby(enumerate(available_coord), lambda (i, x): i - x):
+                group = map(itemgetter(1), group)
+                if len(group) >= boat_hits:
+                    boat_coord = group
                     break
 
-        return True
+            # If boat_coord is empty, then it means that the boat cannot
+            # fit on this row/col. Start over and find a new set of coords.
+            if len(boat_coord) == 0:
+                continue
+
+            # Add the boat coordinates to the Boat table.
+            for each_coord in range(0, len(boat_coord)):
+                if each_coord + 1 > boat_hits:
+                    break
+
+                if direction == 0:
+                    boat_row = start_point
+                    boat_col = boat_coord[each_coord]
+                else:
+                    boat_row = boat_coord[each_coord]
+                    boat_col = start_point
+
+                new_boat = Boat(
+                    game_id=game_key,
+                    user_id=user_key,
+                    boat_type=boat_type,
+                    row=BOARD_ROWS[boat_row],
+                    col=boat_col
+                )
+                new_boat.put()
+
+                new_boat_coord = (new_boat.row, new_boat.col)
+
+                # Remove coords from master coord so they can't be used again.
+                for mc in range(0, len(master_coord)):
+                    if master_coord[mc] == new_boat_coord:
+                        del master_coord[mc]
+                        break
+
+            # The boat was successfully added to the board.
+            return True
+
+        # The method tried 5 times to add the boat to the board and was
+        # unsuccessful.
+        return False
 
 #   _getUserScore -------------------------------------------------------------
 
