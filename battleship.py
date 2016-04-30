@@ -161,6 +161,44 @@ class BattleshipApi(remote.Service):
             return True
         return False
 
+#   _moveHasHitABoat ----------------------------------------------------------
+
+    def _moveHasHitABoat(self,
+                         game_id,
+                         user_id,
+                         move_row,
+                         move_col
+                         ):
+        """
+        Determine if the users move has hit a boat.
+
+        Args:
+          game_id: the id of the game being played.
+          user_id: the id of the user that's making the move.
+          move_row: the row of the users move.
+          move_col: the col of the users move.
+
+        Returns:
+          True if the move has hit a boat.
+          False if the move did not hit a boat.
+        """
+        # Get the game so we can determine who the users' opponent is.
+        selected_game = self._validateAndGetGame(game_id.urlsafe())
+
+        # Grab the opponent user id.
+        if selected_game.user1 == user_id:
+            opponent_user_id = selected_game.user2
+        else:
+            opponent_user_id = selected_game.user1
+
+        # Check the opponents board.
+        if Boat.query(Boat.game_id == game_id,
+                      Boat.user_id == opponent_user_id,
+                      Boat.row == move_row,
+                      Boat.col == move_col).get():
+            return True
+        return False
+
 #   _copyToGameList -----------------------------------------------------------
 
     def _copyToGameList(self,
@@ -788,18 +826,24 @@ class BattleshipApi(remote.Service):
             a_new_move.status = 2  # duplicate move
             return_message = 'Whoops! You already made that move.'
         else:
-            # TODO
-            # Once boats are implemented determine if the move has hit a boat.
-            # Also increment the sunk counter if applicable.
-            # a_new_move.status = 1  # hit
-            # a_new_move.hits += 1
-            # a_new_move.sunk += 1
-            # return_message = 'That was a hit!'
-            # return_message = 'You sunk the {}!'.format(name_of_ship)
+            # Determine if the move has hit a boat.
+            if self._moveHasHitABoat(game_key,
+                                     user_key,
+                                     my_row,
+                                     my_col
+                                     ):
+                a_new_move.status = 1  # hit
+                a_new_move.hits += 1
+                return_message = 'That was a hit!'
 
-            a_new_move.status = 0  # miss
-            a_new_move.miss += 1
-            return_message = 'That was a miss.'
+                # TODO
+                # Determine if the move has sunk a boat.
+                # a_new_move.sunk += 1
+                # return_message = 'You sunk the {}!'.format(name_of_ship)
+            else:
+                a_new_move.status = 0  # miss
+                a_new_move.miss += 1
+                return_message = 'That was a miss.'
 
         # Save the Move.
         a_new_move.put()
