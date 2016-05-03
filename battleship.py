@@ -161,26 +161,25 @@ class BattleshipApi(remote.Service):
             return True
         return False
 
-#   _moveHasHitABoat ----------------------------------------------------------
+#   _getBoat ------------------------------------------------------------------
 
-    def _moveHasHitABoat(self,
-                         game_id,
-                         user_id,
-                         move_row,
-                         move_col
-                         ):
+    def _getBoat(self,
+                 game_id,
+                 user_id,
+                 move_row,
+                 move_col
+                 ):
         """
-        Determine if the users move has hit a boat.
+        Get the Boat entity.
 
         Args:
           game_id: the id of the game being played.
           user_id: the id of the user that's making the move.
-          move_row: the row of the users move.
-          move_col: the col of the users move.
+          move_row: the row of the Boat.
+          move_col: the col of the Boat.
 
         Returns:
-          True if the move has hit a boat.
-          False if the move did not hit a boat.
+          a Boat entity
         """
         # Get the game so we can determine who the users' opponent is.
         selected_game = self._validateAndGetGame(game_id.urlsafe())
@@ -192,10 +191,53 @@ class BattleshipApi(remote.Service):
             opponent_user_id = selected_game.user1
 
         # Check the opponents board.
+        selected_boat = Boat.query(Boat.game_id == game_id,
+                                   Boat.user_id == opponent_user_id,
+                                   Boat.row == move_row,
+                                   Boat.col == move_col).get()
+
+        return selected_boat
+
+#   _boatIsSunk ---------------------------------------------------------------
+
+    def _boatIsSunk(self,
+                    game_id,
+                    user_id,
+                    boat_type
+                    ):
+        """
+        Determine if a boat is sunk.
+
+        Args:
+          game_id: the id of the game being played.
+          user_id: the id of the user that's making the move.
+          boat_type: the boat type to search for.
+
+        Returns:
+          True if the boat is sunk.
+          False if the boat is not sunk.
+        """
+        boat_hits = 0
+
+        if boat_type == CARRIER:
+            boat_hits = CARRIER_HITS
+
+        if boat_type == BATTLESHIP:
+            boat_hits = BATTLESHIP_HITS
+
+        if boat_type == SUBMARINE:
+            boat_hits = SUBMARINE_HITS
+
+        if boat_type == DESTROYER:
+            boat_hits = DESTROYER_HITS
+
+        if boat_type == PATROL:
+            boat_hits = PATROL_HITS
+
         if Boat.query(Boat.game_id == game_id,
-                      Boat.user_id == opponent_user_id,
-                      Boat.row == move_row,
-                      Boat.col == move_col).get():
+                      Boat.user_id == user_id,
+                      Boat.boat_type == boat_type,
+                      Boat.hit == True).count() == boat_hits:
             return True
         return False
 
@@ -468,6 +510,7 @@ class BattleshipApi(remote.Service):
                     game_id=game_key,
                     user_id=user_key,
                     boat_type=boat_type,
+                    hit=False,
                     row=BOARD_ROWS[boat_row],
                     col=boat_col
                 )
@@ -826,20 +869,54 @@ class BattleshipApi(remote.Service):
             a_new_move.status = 2  # duplicate move
             return_message = 'Whoops! You already made that move.'
         else:
-            # Determine if the move has hit a boat.
-            if self._moveHasHitABoat(game_key,
-                                     user_key,
-                                     my_row,
-                                     my_col
-                                     ):
+            # Get the Boat entity.
+            selected_boat = self._getBoat(game_key,
+                                          user_key,
+                                          my_row,
+                                          my_col
+                                          )
+
+            # If the boat is returned then the user has a hit!
+            if selected_boat:
+                # Log a hit on the boat.
+                selected_boat.hit = True
+                selected_boat.put()
+
+                # Set the move status to a hit and increment the hit counter.
                 a_new_move.status = 1  # hit
                 a_new_move.hits += 1
                 return_message = 'That was a hit!'
 
-                # TODO
                 # Determine if the move has sunk a boat.
-                # a_new_move.sunk += 1
-                # return_message = 'You sunk the {}!'.format(name_of_ship)
+                if self._boatIsSunk(game_key,
+                                    user_key,
+                                    selected_boat.boat_type
+                                    ):
+
+                    # The move has sunk a boat! Notify the user.
+                    a_new_move.sunk += 1
+
+                    name_of_ship = '<error: unknown ship>'
+
+                    if boat_type == CARRIER:
+                        name_of_ship = 'Carrier'
+
+                    if boat_type == BATTLESHIP:
+                        name_of_ship = 'Battleship'
+
+                    if boat_type == SUBMARINE:
+                        name_of_ship = 'Submarine'
+
+                    if boat_type == DESTROYER:
+                        name_of_ship = 'Destroyer'
+
+                    if boat_type == PATROL:
+                        name_of_ship = 'Patrol'
+
+                    return_message = 'You sunk the {}!'.format(name_of_ship)
+
+                    # TODO
+                    # Determine if the user has won the game.
             else:
                 a_new_move.status = 0  # miss
                 a_new_move.miss += 1

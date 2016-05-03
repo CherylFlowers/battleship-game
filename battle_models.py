@@ -58,3 +58,4 @@ class Boat(ndb.Model):
     boat_type = ndb.IntegerProperty(required=True)
     row = ndb.StringProperty(required=True)
     col = ndb.IntegerProperty(required=True)
+    hit = ndb.BooleanProperty()
