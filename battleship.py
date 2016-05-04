@@ -58,28 +58,6 @@ class BattleshipApi(remote.Service):
     Battleship API v1
     """
 
-#   _validateBlankUser --------------------------------------------------------
-
-    def _validateBlankUser(self,
-                           user_to_validate,
-                           custom_error_message
-                           ):
-        """
-        Ensure the username is not blank.
-
-        Args:
-          user_to_validate: the username to verify.
-          custom_error_message: enter a custom error message.
-
-        Returns:
-          Raises a BadRequestException if the user is blank.
-          Returns true if the user is not blank.
-        """
-        if user_to_validate is None:
-            raise endpoints.BadRequestException(
-                '{} cannot be blank.'.format(custom_error_message))
-        return True
-
 #   _validateAndGetGame -------------------------------------------------------
 
     def _validateAndGetGame(self,
@@ -609,8 +587,6 @@ class BattleshipApi(remote.Service):
         """
         Create a User. Username is required. Username must be unique.
         """
-        self._validateBlankUser(request.username, 'Username')
-
         if self._getUser(request.username):
             raise endpoints.ConflictException(
                 '{} user already exists.'.format(request.username))
@@ -789,7 +765,6 @@ class BattleshipApi(remote.Service):
                        request
                        ):
         """Return all active games for a user."""
-        self._validateBlankUser(request.websafe_user_key, 'websafe_user_key')
 
         # Get User from Datastore.
         selected_user = self._validateAndGetUser(request.websafe_user_key)
