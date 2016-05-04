@@ -13,6 +13,8 @@ from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
+import battle_consts
+
 from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
 from battle_containers import CANCEL_GAME_REQUEST
@@ -43,28 +45,6 @@ from random import randint
 import string
 from operator import itemgetter
 from itertools import groupby
-
-
-# CONSTS ----------------------------------------------------------------------
-
-VALID_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-VALID_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-CARRIER = 0
-BATTLESHIP = 1
-SUBMARINE = 2
-DESTROYER = 3
-PATROL = 4
-
-CARRIER_HITS = 5
-BATTLESHIP_HITS = 4
-SUBMARINE_HITS = 3
-DESTROYER_HITS = 3
-PATROL_HITS = 2
-
-TOTAL_HITS = 17
-
-BOARD_ROWS = "ABCDEFGHIJ"
 
 
 # @endpoints.api BattleshipApi ------------------------------------------------
@@ -221,20 +201,20 @@ class BattleshipApi(remote.Service):
         """
         boat_hits = 0
 
-        if boat_type == CARRIER:
-            boat_hits = CARRIER_HITS
+        if boat_type == battle_consts.CARRIER:
+            boat_hits = battle_consts.CARRIER_HITS
 
-        if boat_type == BATTLESHIP:
-            boat_hits = BATTLESHIP_HITS
+        if boat_type == battle_consts.BATTLESHIP:
+            boat_hits = battle_consts.BATTLESHIP_HITS
 
-        if boat_type == SUBMARINE:
-            boat_hits = SUBMARINE_HITS
+        if boat_type == battle_consts.SUBMARINE:
+            boat_hits = battle_consts.SUBMARINE_HITS
 
-        if boat_type == DESTROYER:
-            boat_hits = DESTROYER_HITS
+        if boat_type == battle_consts.DESTROYER:
+            boat_hits = battle_consts.DESTROYER_HITS
 
-        if boat_type == PATROL:
-            boat_hits = PATROL_HITS
+        if boat_type == battle_consts.PATROL:
+            boat_hits = battle_consts.PATROL_HITS
 
         if Boat.query(Boat.game_id == game_id,
                       Boat.user_id == user_id,
@@ -270,7 +250,7 @@ class BattleshipApi(remote.Service):
 
         if Boat.query(Boat.game_id == game_id,
                       Boat.user_id == opponent_user_id,
-                      Boat.hit == True).count() == TOTAL_HITS:
+                      Boat.hit == True).count() == battle_consts.TOTAL_HITS:
             return True
         return False
 
@@ -544,7 +524,7 @@ class BattleshipApi(remote.Service):
                     user_id=user_key,
                     boat_type=boat_type,
                     hit=False,
-                    row=BOARD_ROWS[boat_row],
+                    row=battle_consts.BOARD_ROWS[boat_row],
                     col=boat_col
                 )
                 new_boat.put()
@@ -696,32 +676,32 @@ class BattleshipApi(remote.Service):
         self._addBoat(game_key,
                       user1_key,
                       master_coord_user1,
-                      CARRIER,
-                      CARRIER_HITS)
+                      battle_consts.CARRIER,
+                      battle_consts.CARRIER_HITS)
 
         self._addBoat(game_key,
                       user1_key,
                       master_coord_user1,
-                      BATTLESHIP,
-                      BATTLESHIP_HITS)
+                      battle_consts.BATTLESHIP,
+                      battle_consts.BATTLESHIP_HITS)
 
         self._addBoat(game_key,
                       user1_key,
                       master_coord_user1,
-                      SUBMARINE,
-                      SUBMARINE_HITS)
+                      battle_consts.SUBMARINE,
+                      battle_consts.SUBMARINE_HITS)
 
         self._addBoat(game_key,
                       user1_key,
                       master_coord_user1,
-                      DESTROYER,
-                      DESTROYER_HITS)
+                      battle_consts.DESTROYER,
+                      battle_consts.DESTROYER_HITS)
 
         self._addBoat(game_key,
                       user1_key,
                       master_coord_user1,
-                      PATROL,
-                      PATROL_HITS)
+                      battle_consts.PATROL,
+                      battle_consts.PATROL_HITS)
 
         # Auto-generate all boats on user 2's board.
 
@@ -731,32 +711,32 @@ class BattleshipApi(remote.Service):
         self._addBoat(game_key,
                       user2_key,
                       master_coord_user2,
-                      CARRIER,
-                      CARRIER_HITS)
+                      battle_consts.CARRIER,
+                      battle_consts.CARRIER_HITS)
 
         self._addBoat(game_key,
                       user2_key,
                       master_coord_user2,
-                      BATTLESHIP,
-                      BATTLESHIP_HITS)
+                      battle_consts.BATTLESHIP,
+                      battle_consts.BATTLESHIP_HITS)
 
         self._addBoat(game_key,
                       user2_key,
                       master_coord_user2,
-                      SUBMARINE,
-                      SUBMARINE_HITS)
+                      battle_consts.SUBMARINE,
+                      battle_consts.SUBMARINE_HITS)
 
         self._addBoat(game_key,
                       user2_key,
                       master_coord_user2,
-                      DESTROYER,
-                      DESTROYER_HITS)
+                      battle_consts.DESTROYER,
+                      battle_consts.DESTROYER_HITS)
 
         self._addBoat(game_key,
                       user2_key,
                       master_coord_user2,
-                      PATROL,
-                      PATROL_HITS)
+                      battle_consts.PATROL,
+                      battle_consts.PATROL_HITS)
 
         return StringMessage(message='Game was successfully created!')
 
@@ -847,14 +827,14 @@ class BattleshipApi(remote.Service):
         # Validate the row.
         my_row = request.row.upper()
 
-        if my_row not in VALID_ROWS:
+        if my_row not in battle_consts.VALID_ROWS:
             raise endpoints.BadRequestException(
                 'That was not a valid row. Valid rows are one of the following: ABCDEFGHIJ.')
 
         # Validate the column.
         my_col = int(request.col)
 
-        if my_col not in VALID_COLS:
+        if my_col not in battle_consts.VALID_COLS:
             raise endpoints.BadRequestException(
                 'That was not a valid column. Valid columns are 1-10 inclusive.')
 
@@ -936,19 +916,19 @@ class BattleshipApi(remote.Service):
 
                         name_of_ship = '<error: unknown ship>'
 
-                        if boat_type == CARRIER:
+                        if boat_type == battle_consts.CARRIER:
                             name_of_ship = 'Carrier'
 
-                        if boat_type == BATTLESHIP:
+                        if boat_type == battle_consts.BATTLESHIP:
                             name_of_ship = 'Battleship'
 
-                        if boat_type == SUBMARINE:
+                        if boat_type == battle_consts.SUBMARINE:
                             name_of_ship = 'Submarine'
 
-                        if boat_type == DESTROYER:
+                        if boat_type == battle_consts.DESTROYER:
                             name_of_ship = 'Destroyer'
 
-                        if boat_type == PATROL:
+                        if boat_type == battle_consts.PATROL:
                             name_of_ship = 'Patrol'
 
                         return_message = 'You sunk the {}!'.format(name_of_ship)
