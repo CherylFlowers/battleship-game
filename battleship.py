@@ -62,6 +62,8 @@ SUBMARINE_HITS = 3
 DESTROYER_HITS = 3
 PATROL_HITS = 2
 
+TOTAL_HITS = 17
+
 BOARD_ROWS = "ABCDEFGHIJ"
 
 
@@ -238,6 +240,37 @@ class BattleshipApi(remote.Service):
                       Boat.user_id == user_id,
                       Boat.boat_type == boat_type,
                       Boat.hit == True).count() == boat_hits:
+            return True
+        return False
+
+#   _userHasWonGame -----------------------------------------------------------
+
+    def _userHasWonGame(self,
+                        game_key,
+                        user_key
+                        ):
+        """
+        Determine if the user has won the game.
+
+        Args:
+          game_key: the game id of the game to verify
+          user_key: the user id of the user that just made a move
+        Returns:
+          True if the user has just won.
+          False if the user did not win.
+        """
+        # Get the game so we can determine who the users' opponent is.
+        selected_game = self._validateAndGetGame(game_id.urlsafe())
+
+        # Grab the opponent user id.
+        if selected_game.user1 == user_id:
+            opponent_user_id = selected_game.user2
+        else:
+            opponent_user_id = selected_game.user1
+
+        if Boat.query(Boat.game_id == game_id,
+                      Boat.user_id == opponent_user_id,
+                      Boat.hit == True).count() == TOTAL_HITS:
             return True
         return False
 
@@ -893,30 +926,32 @@ class BattleshipApi(remote.Service):
                                     selected_boat.boat_type
                                     ):
 
-                    # The move has sunk a boat! Notify the user.
-                    a_new_move.sunk += 1
+                    if self._userHasWonGame(game_key,
+                                            user_key
+                                            ):
+                        return_message = 'You won!'
+                    else:
+                        # The move has sunk a boat! Notify the user.
+                        a_new_move.sunk += 1
 
-                    name_of_ship = '<error: unknown ship>'
+                        name_of_ship = '<error: unknown ship>'
 
-                    if boat_type == CARRIER:
-                        name_of_ship = 'Carrier'
+                        if boat_type == CARRIER:
+                            name_of_ship = 'Carrier'
 
-                    if boat_type == BATTLESHIP:
-                        name_of_ship = 'Battleship'
+                        if boat_type == BATTLESHIP:
+                            name_of_ship = 'Battleship'
 
-                    if boat_type == SUBMARINE:
-                        name_of_ship = 'Submarine'
+                        if boat_type == SUBMARINE:
+                            name_of_ship = 'Submarine'
 
-                    if boat_type == DESTROYER:
-                        name_of_ship = 'Destroyer'
+                        if boat_type == DESTROYER:
+                            name_of_ship = 'Destroyer'
 
-                    if boat_type == PATROL:
-                        name_of_ship = 'Patrol'
+                        if boat_type == PATROL:
+                            name_of_ship = 'Patrol'
 
-                    return_message = 'You sunk the {}!'.format(name_of_ship)
-
-                    # TODO
-                    # Determine if the user has won the game.
+                        return_message = 'You sunk the {}!'.format(name_of_ship)
             else:
                 a_new_move.status = 0  # miss
                 a_new_move.miss += 1

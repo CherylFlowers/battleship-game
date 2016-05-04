@@ -56,6 +56,12 @@ indexes:
   - name: boat_type
   - name: hit
 
+- kind: Boat
+  properties:
+  - name: game_id
+  - name: user_id
+  - name: hit
+
 - kind: Game
   properties:
   - name: status
