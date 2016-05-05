@@ -15,6 +15,7 @@ from protorpc import remote
 
 import battle_consts
 import battle_users
+import battle_game
 
 from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
@@ -28,9 +29,7 @@ from battle_containers import GET_USER_SCORE
 
 from battle_messages import StringMessage
 from battle_messages import ListOfGames
-from battle_messages import SingleGame
 from battle_messages import ListOfMoves
-from battle_messages import SingleMoveForList
 from battle_messages import ReturnGameState
 from battle_messages import SingleBoatForList
 from battle_messages import ListOfBoats
@@ -59,28 +58,6 @@ class BattleshipApi(remote.Service):
     Battleship API v1
     """
 
-#   _validateAndGetGame -------------------------------------------------------
-
-    def _validateAndGetGame(self,
-                            websafe_game_to_validate
-                            ):
-        """
-        Validates that a game exists and returns the Game object.
-
-        Args:
-          websafe_game_to_validate: the url-safe key of the game.
-
-        Returns:
-          An error is raised if the game doesn't exist.
-          If the game exists then a Game object is returned.
-        """
-        try:
-            selected_game = ndb.Key(urlsafe=websafe_game_to_validate).get()
-        except:
-            raise endpoints.BadRequestException('Game does not exist.')
-
-        return selected_game
-
 #   _getBoat ------------------------------------------------------------------
 
     def _getBoat(self,
@@ -102,7 +79,7 @@ class BattleshipApi(remote.Service):
           a Boat entity
         """
         # Get the game so we can determine who the users' opponent is.
-        selected_game = self._validateAndGetGame(game_id.urlsafe())
+        selected_game = battle_game._validateAndGetGame(game_id.urlsafe())
 
         # Grab the opponent user id.
         if selected_game.user1 == user_id:
@@ -161,107 +138,6 @@ class BattleshipApi(remote.Service):
             return True
         return False
 
-#   _userHasWonGame -----------------------------------------------------------
-
-    def _userHasWonGame(self,
-                        game_key,
-                        user_key
-                        ):
-        """
-        Determine if the user has won the game.
-
-        Args:
-          game_key: the game id of the game to verify
-          user_key: the user id of the user that just made a move
-        Returns:
-          True if the user has just won.
-          False if the user did not win.
-        """
-        # Get the game so we can determine who the users' opponent is.
-        selected_game = self._validateAndGetGame(game_id.urlsafe())
-
-        # Grab the opponent user id.
-        if selected_game.user1 == user_id:
-            opponent_user_id = selected_game.user2
-        else:
-            opponent_user_id = selected_game.user1
-
-        if Boat.query(Boat.game_id == game_id,
-                      Boat.user_id == opponent_user_id,
-                      Boat.hit == True).count() == battle_consts.TOTAL_HITS:
-            return True
-        return False
-
-#   _copyToGameList -----------------------------------------------------------
-
-    def _copyToGameList(self,
-                        game_to_copy
-                        ):
-        """
-        Populate the outbound game message with values from game_to_copy.
-
-        Args:
-            game_to_copy: the game object to copy to the outbound message
-
-        Returns:
-            an outbound message populated with info from game_to_copy arg
-        """
-        selected_game = SingleGame()
-
-        # Iterate through all fields in the game message.
-        for field in selected_game.all_fields():
-            # If a field in the game_to_copy arg matches a field in the
-            # game message, copy the value from the arg to the message.
-            if hasattr(game_to_copy, field.name):
-                setattr(selected_game, field.name,
-                        getattr(game_to_copy, field.name))
-            elif field.name == "websafeKey":
-                # Encode the key so it's suitable to embed in a URL.
-                setattr(selected_game, field.name, game_to_copy.key.urlsafe())
-
-        # Verify all values in the game message have been assigned a value.
-        selected_game.check_initialized()
-
-        # Return the updated game message.
-        return selected_game
-
-#   _copyToMoveList -----------------------------------------------------------
-
-    def _copyToMoveList(self,
-                        move_to_copy
-                        ):
-        """
-        Populate the outbound move message with values from move_to_copy.
-
-        Args:
-            move_to_copy: the move object to copy to the outbound message
-
-        Returns:
-            an outbound message populated with info from move_to_copy arg
-        """
-        selected_move = SingleMoveForList()
-
-        # Iterate through all fields in the move message.
-        for field in selected_move.all_fields():
-            # If a field in the move_to_copy arg matches a field in the
-            # move message, copy the value from the arg to the message.
-            if hasattr(move_to_copy, field.name):
-                setattr(selected_move, field.name,
-                        getattr(move_to_copy, field.name))
-            elif (field.name == "websafe_game_key_for_move"):
-                # Encode the key so it's suitable to embed in a URL.
-                setattr(selected_move, field.name,
-                        move_to_copy.game_id.urlsafe())
-            elif (field.name == "websafe_user_key_for_move"):
-                setattr(selected_move, field.name,
-                        move_to_copy.user_id.urlsafe())
-
-        # Verify all values in the move message have been assigned a value.
-        selected_move.check_initialized()
-
-        # Return the updated move message.
-        return selected_move
-
 #   _copyToBoatList -----------------------------------------------------------
 
     def _copyToBoatList(self,
@@ -291,63 +167,6 @@ class BattleshipApi(remote.Service):
 
         # Return the updated boat message.
         return selected_boat
-
-#   _getUsersLastMove ---------------------------------------------------------
-
-    def _getUsersLastMove(self,
-                          game_key,
-                          user_key
-                          ):
-        """
-        Return the last move that the user made in a specific game.
-
-        Args:
-          game_key: the key of the game that the user is playing.
-          user_key: the key of the user to get the move for.
-
-        Returns:
-          A Move object.
-        """
-        return Move.query(Move.game_id == game_key,
-                          Move.user_id == user_key).order(-Move.sequence).get()
-
-#   _getGameStateForUser ------------------------------------------------------
-
-    def _getGameStateForUser(self,
-                             game_key,
-                             selected_game,
-                             user_to_get
-                             ):
-        """
-        Get the game state for a user for a selected game.
-
-        Args:
-          game_key: the key of the game.
-          selected_game: the Game object.
-          user_to_get: an integer indicating which user to get the state for.
-
-        Returns:
-          A string in the format; <username> : Hits <x> : Miss <x> : Sunk <x>
-        """
-        # Using the game info, get the user key.
-        if user_to_get == 1:
-            user_key = selected_game.user1
-            websafe_user_key = selected_game.user1.urlsafe()
-        else:
-            user_key = selected_game.user2
-            websafe_user_key = selected_game.user2.urlsafe()
-
-        # Get the last user move. The move contains the sum
-        # of hits, misses and sunk boats.
-        last_user_move = self._getUsersLastMove(game_key, user_key)
-
-        # Need to get the users' name.
-        user_profile = battle_users._getUserViaWebsafeKey(websafe_user_key)
-
-        if last_user_move is None:
-            return user_profile.user_name + ' has not made any moves yet.'
-
-        return 'User ' + str(user_profile.user_name) + ' : Hits ' + str(last_user_move.hits) + ' : Miss ' + str(last_user_move.miss) + ' : Sunk ' + str(last_user_move.sunk)
 
 #   _buildBoard ---------------------------------------------------------------
 
@@ -643,7 +462,7 @@ class BattleshipApi(remote.Service):
             raise endpoints.BadRequestException('Game ID cannot be blank.')
 
         # Get Game from Datastore.
-        current_game = self._validateAndGetGame(request.websafe_game_key)
+        current_game = battle_game._validateAndGetGame(request.websafe_game_key)
 
         # Notify if the game is already in cancelled status.
         if current_game.status == 2:
@@ -674,19 +493,16 @@ class BattleshipApi(remote.Service):
                        ):
         """Return all active games for a user."""
 
-        # Get User from Datastore.
-        selected_user = battle_users._getUserViaWebsafeKey(
-            request.websafe_user_key)
+        user_key = ndb.Key(urlsafe=request.websafe_user_key)
 
         # Get all games that are currently in progress for that user.
-        games = Game.query(ndb.AND(Game.status == 0,
-                                   ndb.OR(
-                                       Game.user1 == selected_user.user_name,
-                                       Game.user2 == selected_user.user_name)))
+        games = Game.query(ndb.AND(Game.status == 0, ndb.OR(
+            Game.user1 == user_key, Game.user2 == user_key)))
         games = games.order(Game.user1, Game.user2)
 
         return ListOfGames(
-            all_games=[self._copyToGameList(each_game) for each_game in games]
+            all_games=[battle_game._copyGameToList(
+                each_game) for each_game in games]
         )
 
 #   @endpoints.method make_move -----------------------------------------------
@@ -703,7 +519,7 @@ class BattleshipApi(remote.Service):
         """Make a move. Requires game ID, user ID, row and col."""
 
         # Validate that the game exists and get Game object.
-        current_game = self._validateAndGetGame(request.websafe_game_key)
+        current_game = battle_game._validateAndGetGame(request.websafe_game_key)
 
         # Validate that the user exists and get User object.
         selected_user = battle_users._getUserViaWebsafeKey(
@@ -740,7 +556,7 @@ class BattleshipApi(remote.Service):
         # Query the Move kind for the last move for the user.
         # The Move kind stores a running total of hits, miss and sunk.
         # Use/increment these values for the next move.
-        last_user_move = self._getUsersLastMove(game_key, user_key)
+        last_user_move = battle_game._getUsersLastMove(game_key, user_key)
 
         if last_user_move is None:
             last_user_move = Move(hits=0, miss=0, sunk=0)
@@ -791,9 +607,9 @@ class BattleshipApi(remote.Service):
                                     selected_boat.boat_type
                                     ):
 
-                    if self._userHasWonGame(game_key,
-                                            user_key
-                                            ):
+                    if battle_game._userHasWonGame(game_key,
+                                                   user_key
+                                                   ):
                         return_message = 'You won!'
                     else:
                         # The move has sunk a boat! Notify the user.
@@ -855,7 +671,8 @@ class BattleshipApi(remote.Service):
         moves = moves.order(Move.sequence)
 
         return ListOfMoves(
-            all_moves=[self._copyToMoveList(each_move) for each_move in moves]
+            all_moves=[battle_game._copyMoveToList(
+                each_move) for each_move in moves]
         )
 
 #   @endpoints.method get_game ------------------------------------------------
@@ -872,17 +689,18 @@ class BattleshipApi(remote.Service):
         """Returns the current state of the game ie. Username : Hits 3 : Miss 12 : Sunk 0"""
 
         # Get the game info and the game key.
-        selected_game = self._validateAndGetGame(request.websafe_game_key)
+        selected_game = battle_game._validateAndGetGame(
+            request.websafe_game_key)
         game_key = ndb.Key(urlsafe=request.websafe_game_key)
 
         user_states = []
 
         # Get game state for user 1.
-        user_states.append(self._getGameStateForUser(
+        user_states.append(battle_game._getGameStateForUser(
             game_key, selected_game, 1))
 
         # Get game state for user 2.
-        user_states.append(self._getGameStateForUser(
+        user_states.append(battle_game._getGameStateForUser(
             game_key, selected_game, 2))
 
         # Return the pre-formatted state messages.
@@ -904,7 +722,7 @@ class BattleshipApi(remote.Service):
         """Get a list of a users' boat coordinates for a game."""
 
         # Get the game key.
-        self._validateAndGetGame(request.websafe_game_key)
+        battle_game._validateAndGetGame(request.websafe_game_key)
         game_key = ndb.Key(urlsafe=request.websafe_game_key)
 
         # Get the user key.
