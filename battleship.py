@@ -14,6 +14,7 @@ from protorpc import message_types
 from protorpc import remote
 
 import battle_consts
+import battle_users
 
 from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
@@ -79,47 +80,6 @@ class BattleshipApi(remote.Service):
             raise endpoints.BadRequestException('Game does not exist.')
 
         return selected_game
-
-#   _validateAndGetUser -------------------------------------------------------
-
-    def _validateAndGetUser(self,
-                            websafe_user_to_validate
-                            ):
-        """
-        Validates that a user exists and returns the User object.
-
-        Args:
-          websafe_user_to_validate: the url-safe key of the user.
-
-        Returns:
-          An error is raised if the user doesn't exist.
-          If the user exists then a User object is returned.
-        """
-        try:
-            selected_user = ndb.Key(urlsafe=websafe_user_to_validate).get()
-        except:
-            raise endpoints.BadRequestException('User does not exist.')
-
-        return selected_user
-
-#   _getUser ------------------------------------------------------------------
-
-    def _getUser(self,
-                 user_to_get
-                 ):
-        """
-        Query the database for a user.
-
-        Args:
-          user_to_get: the username to get from the database.
-
-        Returns:
-          True if the user is found.
-          False if the user is not found.
-        """
-        if User.query(User.user_name == user_to_get).get():
-            return True
-        return False
 
 #   _getBoat ------------------------------------------------------------------
 
@@ -382,7 +342,7 @@ class BattleshipApi(remote.Service):
         last_user_move = self._getUsersLastMove(game_key, user_key)
 
         # Need to get the users' name.
-        user_profile = self._validateAndGetUser(websafe_user_key)
+        user_profile = battle_users._getUserViaWebsafeKey(websafe_user_key)
 
         if last_user_move is None:
             return user_profile.user_name + ' has not made any moves yet.'
@@ -522,57 +482,6 @@ class BattleshipApi(remote.Service):
         # unsuccessful.
         return False
 
-#   _getUserScore -------------------------------------------------------------
-
-    def _getUserScore(self,
-                      websafe_user_key
-                      ):
-        """
-        Determine the total number of games that a user has won or lost.
-
-        Args:
-          websafe_user_key: the user to search for
-
-        Returns:
-          a tuple with the use rname[0], games won[1] and games lost[2]
-        """
-
-        # Validate that the user exists and get User object.
-        selected_user = self._validateAndGetUser(websafe_user_key)
-
-        # Get the user key.
-        user_key = ndb.Key(urlsafe=websafe_user_key)
-
-        # Get games the user won.
-        games_won = Game.query(ndb.AND(Game.status == 1, Game.winner == user_key, ndb.OR(
-            Game.user1 == user_key, Game.user2 == user_key))).count()
-
-        # Get games the user lost.
-        games_lost = Game.query(ndb.AND(Game.status == 1, Game.winner != user_key, ndb.OR(
-            Game.user1 == user_key, Game.user2 == user_key))).count()
-
-        # Create a tuple with the username, wins and losses.
-        user_score = (selected_user.user_name, games_won, games_lost)
-
-        return user_score
-
-#   _getUserScoreMessage ------------------------------------------------------
-
-    def _getUserScoreMessage(self,
-                             user_score,
-                             ):
-        """
-        Generate a message with the users wins/losses.
-
-        Args:
-          user_score: a tuple with the games won[0], games lost[1], username[2]
-                      this can be generated via _getUserScore.
-
-        Returns:
-          a string in the format; <username> : Wins <x> : Losses <x>
-        """
-        return user_score[0] + ' : Wins ' + str(user_score[1]) + ' : Losses ' + str(user_score[2])
-
 #   @endpoints.method create_user ---------------------------------------------
 
     @endpoints.method(USER_POST_REQUEST,
@@ -587,12 +496,11 @@ class BattleshipApi(remote.Service):
         """
         Create a User. Username is required. Username must be unique.
         """
-        if self._getUser(request.username):
+        if battle_users._userExists(request.username):
             raise endpoints.ConflictException(
                 '{} user already exists.'.format(request.username))
 
-        new_user = User(user_name=request.username)
-        new_user.put()
+        battle_users._createUser(request.username)
 
         return StringMessage(message='{} was successfully created!'.format(request.username))
 
@@ -767,7 +675,8 @@ class BattleshipApi(remote.Service):
         """Return all active games for a user."""
 
         # Get User from Datastore.
-        selected_user = self._validateAndGetUser(request.websafe_user_key)
+        selected_user = battle_users._getUserViaWebsafeKey(
+            request.websafe_user_key)
 
         # Get all games that are currently in progress for that user.
         games = Game.query(ndb.AND(Game.status == 0,
@@ -797,7 +706,8 @@ class BattleshipApi(remote.Service):
         current_game = self._validateAndGetGame(request.websafe_game_key)
 
         # Validate that the user exists and get User object.
-        selected_user = self._validateAndGetUser(request.websafe_user_key)
+        selected_user = battle_users._getUserViaWebsafeKey(
+            request.websafe_user_key)
 
         # Validate the row.
         my_row = request.row.upper()
@@ -998,7 +908,7 @@ class BattleshipApi(remote.Service):
         game_key = ndb.Key(urlsafe=request.websafe_game_key)
 
         # Get the user key.
-        self._validateAndGetUser(request.websafe_user_key)
+        battle_users._getUserViaWebsafeKey(request.websafe_user_key)
         user_key = ndb.Key(urlsafe=request.websafe_user_key)
 
         # Grab all the boat coords for this user for the game.
@@ -1019,8 +929,8 @@ class BattleshipApi(remote.Service):
                        request
                        ):
         """Get the number of games that a user has won and lost."""
-        user_score = self._getUserScore(request.websafe_user_key)
-        return StringMessage(message=self._getUserScoreMessage(user_score))
+        user_score = battle_users._getUserScore(request.websafe_user_key)
+        return StringMessage(message=battle_users._getUserScoreMessage(user_score))
 
 #   @endpoints.method get_user_rankings ---------------------------------------
 
@@ -1042,7 +952,7 @@ class BattleshipApi(remote.Service):
         # Iterate through the users.
         for each_user in all_users:
             # Get the users' score.
-            single_rank = self._getUserScore(each_user.key.urlsafe())
+            single_rank = battle_users._getUserScore(each_user.key.urlsafe())
 
             # Only include the user if they've actually played a game.
             if (single_rank[1] == 0) and (single_rank[2] == 0):
@@ -1061,7 +971,7 @@ class BattleshipApi(remote.Service):
                               reverse=True)
 
         # Return the user rankings.
-        return ListOfRankings(rankings=[StringMessage(message=self._getUserScoreMessage(each_rank)) for each_rank in all_rankings])
+        return ListOfRankings(rankings=[StringMessage(message=battle_users._getUserScoreMessage(each_rank)) for each_rank in all_rankings])
 
 
 api = endpoints.api_server([BattleshipApi])  # Register API
