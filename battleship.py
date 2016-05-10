@@ -127,74 +127,11 @@ class BattleshipApi(remote.Service):
         game_key = a_new_game.put()
 
         # Auto-generate all boats on user 1's board.
-
-        # Get a list of all available co-ords on the board.
-        master_coord_user1 = battle_boat._buildBoard()
-
-        battle_boat._addBoat(game_key,
-                             user1_key,
-                             master_coord_user1,
-                             battle_consts.CARRIER,
-                             battle_consts.CARRIER_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user1_key,
-                             master_coord_user1,
-                             battle_consts.BATTLESHIP,
-                             battle_consts.BATTLESHIP_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user1_key,
-                             master_coord_user1,
-                             battle_consts.SUBMARINE,
-                             battle_consts.SUBMARINE_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user1_key,
-                             master_coord_user1,
-                             battle_consts.DESTROYER,
-                             battle_consts.DESTROYER_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user1_key,
-                             master_coord_user1,
-                             battle_consts.PATROL,
-                             battle_consts.PATROL_HITS)
+        battle_boat._generateBoardAndBoats(game_key, user1_key)
 
         # Auto-generate all boats on user 2's board.
+        battle_boat._generateBoardAndBoats(game_key, user2_key)
 
-        # Get a list of all available co-ords on the board.
-        master_coord_user2 = battle_boat._buildBoard()
-
-        battle_boat._addBoat(game_key,
-                             user2_key,
-                             master_coord_user2,
-                             battle_consts.CARRIER,
-                             battle_consts.CARRIER_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user2_key,
-                             master_coord_user2,
-                             battle_consts.BATTLESHIP,
-                             battle_consts.BATTLESHIP_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user2_key,
-                             master_coord_user2,
-                             battle_consts.SUBMARINE,
-                             battle_consts.SUBMARINE_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user2_key,
-                             master_coord_user2,
-                             battle_consts.DESTROYER,
-                             battle_consts.DESTROYER_HITS)
-
-        battle_boat._addBoat(game_key,
-                             user2_key,
-                             master_coord_user2,
-                             battle_consts.PATROL,
-                             battle_consts.PATROL_HITS)
 
         return StringMessage(message='Game was successfully created!')
 

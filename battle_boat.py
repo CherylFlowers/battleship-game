@@ -243,3 +243,47 @@ def _addBoat(game_key, user_key, master_coord, boat_type, boat_hits):
     # The method tried 5 times to add the boat to the board and was
     # unsuccessful.
     return False
+
+
+def _generateBoardAndBoats(game_key, user_key):
+    """
+    Generate a board and all boats for a user.
+
+    Args:
+      game_key: the game that the user is playing.
+      user_key: the user that's playing.
+    """
+
+    # Get a list of all available co-ords on the board.
+    master_coord = _buildBoard()
+
+    # Create all boats for the user.
+    _addBoat(game_key,
+             user_key,
+             master_coord,
+             battle_consts.CARRIER,
+             battle_consts.CARRIER_HITS)
+
+    _addBoat(game_key,
+             user_key,
+             master_coord,
+             battle_consts.BATTLESHIP,
+             battle_consts.BATTLESHIP_HITS)
+
+    _addBoat(game_key,
+             user_key,
+             master_coord,
+             battle_consts.SUBMARINE,
+             battle_consts.SUBMARINE_HITS)
+
+    _addBoat(game_key,
+             user_key,
+             master_coord,
+             battle_consts.DESTROYER,
+             battle_consts.DESTROYER_HITS)
+
+    _addBoat(game_key,
+             user_key,
+             master_coord,
+             battle_consts.PATROL,
+             battle_consts.PATROL_HITS)
