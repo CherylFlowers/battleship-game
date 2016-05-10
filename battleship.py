@@ -17,6 +17,7 @@ import battle_consts
 import battle_users
 import battle_game
 import battle_boat
+import battle_utils
 
 from battle_containers import USER_POST_REQUEST
 from battle_containers import NEW_GAME_REQUEST
@@ -83,8 +84,8 @@ class BattleshipApi(remote.Service):
         """
         Create a new game.
         """
-        user1_key = ndb.Key(urlsafe=request.websafe_username1_key)
-        user2_key = ndb.Key(urlsafe=request.websafe_username2_key)
+        user1_key = battle_utils._getNDBKey(request.websafe_username1_key)
+        user2_key = battle_utils._getNDBKey(request.websafe_username2_key)
 
         # Ensure the users exist in the database.
         if not user1_key.get():
@@ -161,7 +162,7 @@ class BattleshipApi(remote.Service):
     def get_user_games(self, request):
         """Return all active games for a user."""
 
-        user_key = ndb.Key(urlsafe=request.websafe_user_key)
+        user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
         # Get all games that are currently in progress for that user.
         games = Game.query(ndb.AND(Game.status == 0, ndb.OR(
@@ -205,8 +206,8 @@ class BattleshipApi(remote.Service):
 
         return_message = ''
 
-        game_key = ndb.Key(urlsafe=request.websafe_game_key)
-        user_key = ndb.Key(urlsafe=request.websafe_user_key)
+        game_key = battle_utils._getNDBKey(request.websafe_game_key)
+        user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
         # Get the next move sequence. The sequence is used to generate
         # the game history.
@@ -319,12 +320,7 @@ class BattleshipApi(remote.Service):
                       )
     def get_game_history(self, request):
         """Get a list of all moves for a game."""
-        # Raise an exception if the game ID is blank.
-        if request.websafe_game_key is None:
-            raise endpoints.BadRequestException(
-                'websafe_game_key cannot be blank.')
-
-        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+        game_key = battle_utils._getNDBKey(request.websafe_game_key)
 
         # Get all moves for a game.
         moves = Move.query(Move.game_id == game_key)
@@ -347,7 +343,7 @@ class BattleshipApi(remote.Service):
         # Get the game info and the game key.
         selected_game = battle_game._validateAndGetGame(
             request.websafe_game_key)
-        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+        game_key = battle_utils._getNDBKey(request.websafe_game_key)
 
         user_states = []
 
@@ -373,11 +369,11 @@ class BattleshipApi(remote.Service):
 
         # Get the game key.
         battle_game._validateAndGetGame(request.websafe_game_key)
-        game_key = ndb.Key(urlsafe=request.websafe_game_key)
+        game_key = battle_utils._getNDBKey(request.websafe_game_key)
 
         # Get the user key.
         battle_users._getUserViaWebsafeKey(request.websafe_user_key)
-        user_key = ndb.Key(urlsafe=request.websafe_user_key)
+        user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
         # Grab all the boat coords for this user for the game.
         boat_list = Boat.query(Boat.game_id == game_key,
