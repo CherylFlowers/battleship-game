@@ -189,3 +189,56 @@ def _getGameStateForUser(game_key, selected_game, user_to_get):
         return user_profile.user_name + ' has not made any moves yet.'
 
     return 'User ' + str(user_profile.user_name) + ' : Hits ' + str(last_user_move.hits) + ' : Miss ' + str(last_user_move.miss) + ' : Sunk ' + str(last_user_move.sunk)
+
+
+def _gameInProgress(user1_key, user2_key):
+    """
+    Determine if two users have a game in progress.
+    It doesn't really matter which games, just get a count.
+
+    Args:
+      user1_key: the key of one of the users in the game.
+      user2_key: the key of one of the users in the game.
+
+    Returns:
+      True if there's a game in progress.
+      False if there's no game in progress.
+    """
+    q = Game.query(Game.user1.IN([user1_key, user2_key]),
+                   Game.user2.IN([user1_key, user2_key]),
+                   Game.status == 0  # In Progress
+                   ).count()
+    if q > 0:
+        return True
+    return False
+
+
+def _getListOfGamesForUser(user_key):
+    """
+    Get a list of all games that are currently in progress for a user.
+
+    Args:
+      user_key: the user to get the games for.
+
+    Returns:
+      A list of Game entities.
+    """
+    games = Game.query(ndb.AND(Game.status == 0, ndb.OR(
+        Game.user1 == user_key, Game.user2 == user_key)))
+    games = games.order(Game.user1, Game.user2)
+    return games
+
+
+def _getAllMovesForAGame(game_key):
+    """
+    Get a listing of all moves for a game.
+
+    Args:
+      game_key: the game that you want to get moves for.
+
+    Return
+      a list of all moves in a game ordered by sequence.
+    """
+    moves = Move.query(Move.game_id == game_key)
+    moves = moves.order(Move.sequence)
+    return moves

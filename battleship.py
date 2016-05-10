@@ -101,12 +101,7 @@ class BattleshipApi(remote.Service):
             raise endpoints.BadRequestException('Users cannot be the same.')
 
         # Ensure a game is not already in progress.
-        q = Game.query(Game.user1.IN([user1_key, user2_key]),
-                       Game.user2.IN([user1_key, user2_key]),
-                       Game.status == 0  # In Progress
-                       ).count()
-
-        if q > 0:
+        if battle_game._gameInProgress(user1_key, user2_key):
             raise endpoints.BadRequestException(
                 'A game is currently in progress for these users.')
 
@@ -163,10 +158,7 @@ class BattleshipApi(remote.Service):
 
         user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
-        # Get all games that are currently in progress for that user.
-        games = Game.query(ndb.AND(Game.status == 0, ndb.OR(
-            Game.user1 == user_key, Game.user2 == user_key)))
-        games = games.order(Game.user1, Game.user2)
+        games = battle_game._getListOfGamesForUser(user_key)
 
         return ListOfGames(
             all_games=[battle_game._copyGameToList(
@@ -321,9 +313,7 @@ class BattleshipApi(remote.Service):
         """Get a list of all moves for a game."""
         game_key = battle_utils._getNDBKey(request.websafe_game_key)
 
-        # Get all moves for a game.
-        moves = Move.query(Move.game_id == game_key)
-        moves = moves.order(Move.sequence)
+        moves = battle_game._getAllMovesForAGame(game_key)
 
         return ListOfMoves(
             all_moves=[battle_game._copyMoveToList(
