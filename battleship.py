@@ -45,8 +45,6 @@ import string
 from operator import itemgetter
 
 
-# @endpoints.api BattleshipApi ------------------------------------------------
-
 @endpoints.api(name='battleship',
                version='v1',
                description="Battleship Game API"
@@ -56,17 +54,13 @@ class BattleshipApi(remote.Service):
     Battleship API v1
     """
 
-#   @endpoints.method create_user ---------------------------------------------
-
     @endpoints.method(USER_POST_REQUEST,
                       StringMessage,
                       name='create_user',
                       path='user',
                       http_method='POST'
                       )
-    def create_user(self,
-                    request
-                    ):
+    def create_user(self, request):
         """
         Create a User. Username is required. Username must be unique.
         """
@@ -78,7 +72,6 @@ class BattleshipApi(remote.Service):
 
         return StringMessage(message='{} was successfully created!'.format(request.username))
 
-#   @endpoints.method new_game ------------------------------------------------
 
     @endpoints.method(NEW_GAME_REQUEST,
                       StringMessage,
@@ -86,9 +79,7 @@ class BattleshipApi(remote.Service):
                       path='game',
                       http_method='POST'
                       )
-    def new_game(self,
-                 request
-                 ):
+    def new_game(self, request):
         """
         Create a new game.
         """
@@ -135,25 +126,16 @@ class BattleshipApi(remote.Service):
 
         return StringMessage(message='Game was successfully created!')
 
-#   @endpoints.method cancel_game ---------------------------------------------
-
     @endpoints.method(CANCEL_GAME_REQUEST,
                       StringMessage,
                       name='cancel_game',
                       path='gameCancel',
                       http_method='POST'
                       )
-    def cancel_game(self,
-                    request
-                    ):
+    def cancel_game(self, request):
         """
         Cancel a game that's in progress.
         """
-        # Raise an exception if the game ID is blank.
-        if request.websafe_game_key is None:
-            raise endpoints.BadRequestException('Game ID cannot be blank.')
-
-        # Get Game from Datastore.
         current_game = battle_game._validateAndGetGame(request.websafe_game_key)
 
         # Notify if the game is already in cancelled status.
@@ -166,13 +148,9 @@ class BattleshipApi(remote.Service):
 
         # Set the status of the game to cancelled.
         current_game.status = 2
-
-        # Save the game.
         current_game.put()
 
         return StringMessage(message='Game was successfully cancelled.')
-
-#   @endpoints.method get_user_games ------------------------------------------
 
     @endpoints.method(GET_USER_GAMES_REQUEST,
                       ListOfGames,
@@ -180,9 +158,7 @@ class BattleshipApi(remote.Service):
                       path='gameGetUserGames',
                       http_method='GET'
                       )
-    def get_user_games(self,
-                       request
-                       ):
+    def get_user_games(self, request):
         """Return all active games for a user."""
 
         user_key = ndb.Key(urlsafe=request.websafe_user_key)
@@ -197,17 +173,13 @@ class BattleshipApi(remote.Service):
                 each_game) for each_game in games]
         )
 
-#   @endpoints.method make_move -----------------------------------------------
-
     @endpoints.method(MOVE_POST_REQUEST,
                       StringMessage,
                       name='make_move',
                       path='gameMakeMove',
                       http_method='POST'
                       )
-    def make_move(self,
-                  request
-                  ):
+    def make_move(self, request):
         """Make a move. Requires game ID, user ID, row and col."""
 
         # Validate that the game exists and get Game object.
@@ -339,17 +311,13 @@ class BattleshipApi(remote.Service):
 
         return StringMessage(message=return_message)
 
-#   @endpoints.method get_game_history ----------------------------------------
-
     @endpoints.method(GET_GAME_HISTORY_REQUEST,
                       ListOfMoves,
                       name='get_game_history',
                       path='gameGetHistory',
                       http_method='GET'
                       )
-    def get_game_history(self,
-                         request
-                         ):
+    def get_game_history(self, request):
         """Get a list of all moves for a game."""
         # Raise an exception if the game ID is blank.
         if request.websafe_game_key is None:
@@ -367,17 +335,13 @@ class BattleshipApi(remote.Service):
                 each_move) for each_move in moves]
         )
 
-#   @endpoints.method get_game ------------------------------------------------
-
     @endpoints.method(GET_GAME_STATE,
                       ReturnGameState,
                       name='get_game',
                       path='gameGetState',
                       http_method='GET'
                       )
-    def get_game(self,
-                 request
-                 ):
+    def get_game(self, request):
         """Returns the current state of the game ie. Username : Hits 3 : Miss 12 : Sunk 0"""
 
         # Get the game info and the game key.
@@ -396,11 +360,7 @@ class BattleshipApi(remote.Service):
             game_key, selected_game, 2))
 
         # Return the pre-formatted state messages.
-        # return ReturnGameState(user_states=[StringMessage(each_state) for
-        # each_state in user_states])
         return ReturnGameState(user_states=[StringMessage(message=each_state) for each_state in user_states])
-
-#   @endpoints.method get_user_boats ------------------------------------------
 
     @endpoints.method(GET_BOAT_LIST,
                       ListOfBoats,
@@ -408,9 +368,7 @@ class BattleshipApi(remote.Service):
                       path='getUserBoats',
                       http_method='GET'
                       )
-    def get_user_boats(self,
-                       request
-                       ):
+    def get_user_boats(self, request):
         """Get a list of a users' boat coordinates for a game."""
 
         # Get the game key.
@@ -427,22 +385,16 @@ class BattleshipApi(remote.Service):
 
         return ListOfBoats(all_boats=[battle_boat._copyBoatToList(each_boat) for each_boat in boat_list])
 
-#   @endpoints.method get_user_scores -----------------------------------------
-
     @endpoints.method(GET_USER_SCORE,
                       StringMessage,
                       name='get_user_score',
                       path='getUserScore',
                       http_method='GET'
                       )
-    def get_user_score(self,
-                       request
-                       ):
+    def get_user_score(self, request):
         """Get the number of games that a user has won and lost."""
         user_score = battle_users._getUserScore(request.websafe_user_key)
         return StringMessage(message=battle_users._getUserScoreMessage(user_score))
-
-#   @endpoints.method get_user_rankings ---------------------------------------
 
     @endpoints.method(message_types.VoidMessage,
                       ListOfRankings,
@@ -450,9 +402,7 @@ class BattleshipApi(remote.Service):
                       path='getUserRankings',
                       http_method='GET'
                       )
-    def get_user_rankings(self,
-                          request
-                          ):
+    def get_user_rankings(self, request):
         """Get a list of users ordered by wins/losses."""
         all_rankings = []
 
