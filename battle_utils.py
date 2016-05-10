@@ -6,6 +6,8 @@ Holds all misc helper methods for the battleship API.
 
 
 from google.appengine.ext import ndb
+from google.appengine.api import app_identity
+from google.appengine.api import mail
 
 from battle_users import _getUsersWithEmails
 from battle_game import _getListOfGamesForUser
@@ -27,7 +29,7 @@ def _getNDBKey(websafe_key_to_get):
 
 def schedule_email_reminder():
     """
-    Send email to remind a user of games in progress.
+    Schedule email to remind a user of games in progress.
     """
 
     # Get a list of users with emails.
@@ -62,4 +64,22 @@ def schedule_email_reminder():
             # Get the name of the opponent.
             opponent = _getUserViaWebsafeKey(last_move.key.urlsafe())
 
-            # TODO - Add the email to the task queue.
+            # Add the email to the task queue.
+            taskqueue.add(params={'email': each_user.email,
+                                  'opponent': opponent.user_name},
+                          url='/tasks/send_email_reminder'
+                          )
+
+
+def send_email_reminder(request):
+    """
+    Send email to remind a user of games in progress.
+    """
+    mail.send_mail(
+        'noreply@%s.appspotmail.com' % (
+            app_identity.get_application_id()),          # from
+        request.get('email'),                            # to
+        'Battleship Game is waiting for your move ...',  # subject
+        'Hey there! {} is waiting for you to make a move!' % request.get(
+            'opponent')
+    )
