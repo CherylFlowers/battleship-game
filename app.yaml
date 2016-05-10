@@ -6,6 +6,9 @@ threadsafe: yes
 
 handlers:
 
+- url: /crons/schedule_email_reminder
+  script: main.app
+
 - url: /_ah/spi/.*
   script: battleship.api
   secure: always

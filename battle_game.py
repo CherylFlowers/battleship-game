@@ -158,6 +158,19 @@ def _getUsersLastMove(game_key, user_key):
                       Move.user_id == user_key).order(-Move.sequence).get()
 
 
+def _getGameLastMove(game_key):
+    """
+    Return the last move made in a specific game.
+
+    Args:
+      game_key: the key of the game.
+
+    Returns:
+      A Move object.
+    """
+    return Move.query(Move.game_id == game_key).order(-Move.sequence).get()
+
+
 def _getGameStateForUser(game_key, selected_game, user_to_get):
     """
     Get the game state for a user for a selected game.

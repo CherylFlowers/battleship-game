@@ -130,3 +130,13 @@ def _getUserScoreMessage(user_score):
       a string in the format; <username> : Wins <x> : Losses <x>
     """
     return user_score[0] + ' : Wins ' + str(user_score[1]) + ' : Losses ' + str(user_score[2])
+
+
+def _getUsersWithEmails():
+    """
+    Get a list of users that have an email entered.
+
+    Returns:
+      A list of User objects.
+    """
+    return User.query(User.email != '')

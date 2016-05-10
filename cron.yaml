@@ -1,0 +1,4 @@
+cron:
+- description: Remind users that a game is waiting for their move
+  url: /crons/schedule_email_reminder
+  schedule: every 12 hours
