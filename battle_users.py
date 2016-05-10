@@ -21,11 +21,14 @@ def _createUser(username):
       username: the name of the user to create.
 
     Returns:
-      True if the user is successfully created.
+      A User object if the user is successfully created.
     """
     new_user = User(user_name=username)
-    new_user.put()
-    return True
+    try:
+        new_user.put()
+    except:
+        raise endpoints.BadRequestException('Could not save user.')
+    return new_user
 
 
 def _getUserViaWebsafeKey(websafe_user_key):
