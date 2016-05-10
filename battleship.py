@@ -57,7 +57,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(USER_POST_REQUEST,
                       StringMessage,
                       name='create_user',
-                      path='user',
+                      path='createUser',
                       http_method='POST'
                       )
     def create_user(self, request):
@@ -76,7 +76,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(NEW_GAME_REQUEST,
                       StringMessage,
                       name='new_game',
-                      path='game',
+                      path='newGame',
                       http_method='POST'
                       )
     def new_game(self, request):
@@ -129,7 +129,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(CANCEL_GAME_REQUEST,
                       StringMessage,
                       name='cancel_game',
-                      path='gameCancel',
+                      path='cancelGame',
                       http_method='POST'
                       )
     def cancel_game(self, request):
@@ -155,7 +155,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(GET_USER_GAMES_REQUEST,
                       ListOfGames,
                       name='get_user_games',
-                      path='gameGetUserGames',
+                      path='getUserGames',
                       http_method='GET'
                       )
     def get_user_games(self, request):
@@ -176,7 +176,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(MOVE_POST_REQUEST,
                       StringMessage,
                       name='make_move',
-                      path='gameMakeMove',
+                      path='makeMove',
                       http_method='POST'
                       )
     def make_move(self, request):
@@ -314,7 +314,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(GET_GAME_HISTORY_REQUEST,
                       ListOfMoves,
                       name='get_game_history',
-                      path='gameGetHistory',
+                      path='getGameHistory',
                       http_method='GET'
                       )
     def get_game_history(self, request):
@@ -338,7 +338,7 @@ class BattleshipApi(remote.Service):
     @endpoints.method(GET_GAME_STATE,
                       ReturnGameState,
                       name='get_game',
-                      path='gameGetState',
+                      path='getGameState',
                       http_method='GET'
                       )
     def get_game(self, request):
