@@ -86,7 +86,7 @@ class BattleshipApi(remote.Service):
         user1_key = battle_utils._getNDBKey(request.websafe_username1_key)
         user2_key = battle_utils._getNDBKey(request.websafe_username2_key)
 
-        # Ensure the users exist in the database.
+        # Ensure the users exist.
         if not user1_key.get():
             raise endpoints.BadRequestException(
                 'websafe_username1_key does not exist.')
@@ -96,7 +96,7 @@ class BattleshipApi(remote.Service):
                 'websafe_username2_key does not exist.')
 
         # Ensure the users are not the same.
-        if (request.websafe_username1_key == request.websafe_username2_key):
+        if (user1_key == user2_key):
             raise endpoints.BadRequestException('Users cannot be the same.')
 
         # Ensure a game is not already in progress.
@@ -154,7 +154,6 @@ class BattleshipApi(remote.Service):
                       )
     def get_user_games(self, request):
         """Return all active games for a user."""
-
         user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
         games = battle_game._getListOfGamesForUser(user_key)

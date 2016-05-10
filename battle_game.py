@@ -148,11 +148,11 @@ def _getUsersLastMove(game_key, user_key):
     Return the last move that the user made in a specific game.
 
     Args:
-    game_key: the key of the game that the user is playing.
-    user_key: the key of the user to get the move for.
+      game_key: the key of the game that the user is playing.
+      user_key: the key of the user to get the move for.
 
     Returns:
-    A Move object.
+      A Move object.
     """
     return Move.query(Move.game_id == game_key,
                       Move.user_id == user_key).order(-Move.sequence).get()
