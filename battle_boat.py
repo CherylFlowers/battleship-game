@@ -108,8 +108,29 @@ def _copyBoatToList(boat_to_copy):
         # If a field in the boat_to_copy arg matches a field in the
         # boat message, copy the value from the arg to the message.
         if hasattr(boat_to_copy, field.name):
-            setattr(selected_boat, field.name,
-                    getattr(boat_to_copy, field.name))
+            if field.name == "boat_type":
+                boat_name = ''
+
+                if boat_to_copy.boat_type == battle_consts.CARRIER:
+                    boat_name = 'Carrier'
+
+                if boat_to_copy.boat_type == battle_consts.BATTLESHIP:
+                    boat_name = 'Battleship'
+
+                if boat_to_copy.boat_type == battle_consts.SUBMARINE:
+                    boat_name = 'Submarine'
+
+                if boat_to_copy.boat_type == battle_consts.DESTROYER:
+                    boat_name = 'Destroyer'
+
+                if boat_to_copy.boat_type == battle_consts.PATROL:
+                    boat_name = 'Patrol'
+
+                setattr(selected_boat, field.name, boat_name)
+
+            else:
+                setattr(selected_boat, field.name,
+                        getattr(boat_to_copy, field.name))
 
     # Verify all values in the boat message have been assigned a value.
     selected_boat.check_initialized()

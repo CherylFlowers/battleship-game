@@ -117,14 +117,24 @@ def _copyMoveToList(move_to_copy):
     for field in selected_move.all_fields():
         # If a field in the move_to_copy arg matches a field in the
         # move message, copy the value from the arg to the message.
-        if hasattr(move_to_copy, field.name):
+        if (field.name == "websafe_user_key_for_move"):
+            setattr(selected_move, field.name, move_to_copy.user_id.urlsafe())
+        if (field.name == "status"):
+            temp_status = ''
+
+            if move_to_copy.status == 0:
+                temp_status = 'Miss'
+
+            if move_to_copy.status == 1:
+                temp_status = 'Hit'
+
+            if move_to_copy.status == 2:
+                temp_status = 'Duplicate'
+
+            setattr(selected_move, field.name, temp_status)
+        elif hasattr(move_to_copy, field.name):
             setattr(selected_move, field.name,
                     getattr(move_to_copy, field.name))
-        elif (field.name == "websafe_game_key_for_move"):
-            # Encode the key so it's suitable to embed in a URL.
-            setattr(selected_move, field.name, move_to_copy.game_id.urlsafe())
-        elif (field.name == "websafe_user_key_for_move"):
-            setattr(selected_move, field.name, move_to_copy.user_id.urlsafe())
 
     # Verify all values in the move message have been assigned a value.
     selected_move.check_initialized()

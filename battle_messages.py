@@ -88,12 +88,10 @@ class ListOfGames(messages.Message):
 
 class SingleMoveForList(messages.Message):
     """Outbound message to return a single move."""
-    websafe_game_key_for_move = messages.StringField(1)
-    websafe_user_key_for_move = messages.StringField(2)
-    row = messages.StringField(3)
-    col = messages.IntegerField(4)
-    status = messages.IntegerField(5)
-    sequence = messages.IntegerField(6)
+    websafe_user_key_for_move = messages.StringField(1)
+    row = messages.StringField(2)
+    col = messages.IntegerField(3)
+    status = messages.StringField(4)
 
 
 class ListOfMoves(messages.Message):
@@ -108,7 +106,7 @@ class ReturnGameState(messages.Message):
 
 class SingleBoatForList(messages.Message):
     """Outbound message to return a single boat."""
-    boat_type = messages.IntegerField(1)
+    boat_type = messages.StringField(1)
     row = messages.StringField(2)
     col = messages.IntegerField(3)
 
