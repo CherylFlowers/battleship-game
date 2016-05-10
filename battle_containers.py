@@ -28,6 +28,7 @@ from battle_messages import GetSingleUserScore
 USER_POST_REQUEST = endpoints.ResourceContainer(
     SingleUser,
     username=messages.StringField(1, required=True),
+    email=messages.StringField(2),
 )
 
 

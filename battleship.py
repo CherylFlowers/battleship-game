@@ -69,7 +69,11 @@ class BattleshipApi(remote.Service):
             raise endpoints.ConflictException(
                 '{} already exists. Please enter a unique username.'.format(request.username))
 
-        new_user = battle_users._createUser(request.username)
+        if battle_users._emailExists(request.email):
+            raise endpoints.ConflictException(
+                '{} is already used. Please enter a unique email.'.format(request.email))
+
+        new_user = battle_users._createUser(request.username, request.email)
 
         return StringMessage(message='User {} successfully created! Websafe Key: {}'.format(request.username, new_user.key.urlsafe()))
 

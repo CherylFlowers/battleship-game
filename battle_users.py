@@ -13,17 +13,19 @@ from battle_models import User
 from battle_models import Game
 
 
-def _createUser(username):
+def _createUser(username, email):
     """
     Create a new User.
 
     Args:
       username: the name of the user to create.
+      email: the email address for the user.
 
     Returns:
       A User object if the user is successfully created.
     """
-    new_user = User(user_name=username)
+    new_user = User(user_name=username,
+                    email=email)
     try:
         new_user.put()
     except:
@@ -62,6 +64,22 @@ def _userExists(username):
       False if the user is not found.
     """
     if User.query(User.user_name == username).get():
+        return True
+    return False
+
+
+def _emailExists(email):
+    """
+    Query the db for an email address.
+
+    Args:
+      email: the email to search for.
+
+    Returns:
+      True if the email is found.
+      False if the email is not found.
+    """
+    if User.query(User.email == email).get():
         return True
     return False
 
