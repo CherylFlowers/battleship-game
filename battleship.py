@@ -67,12 +67,12 @@ class BattleshipApi(remote.Service):
         """
         if battle_users._userExists(request.username):
             raise endpoints.ConflictException(
-                '{} user already exists.'.format(request.username))
+                '{} already exists. Please enter a unique username.'.format(request.username))
 
         battle_users._createUser(request.username)
 
-        return StringMessage(message='{} was successfully created!'.format(request.username))
 
+        return StringMessage(message='User {} successfully created! Websafe Key: {}'.format(request.username, new_user.key.urlsafe()))
 
     @endpoints.method(NEW_GAME_REQUEST,
                       StringMessage,
@@ -124,8 +124,7 @@ class BattleshipApi(remote.Service):
         # Auto-generate all boats on user 2's board.
         battle_boat._generateBoardAndBoats(game_key, user2_key)
 
-
-        return StringMessage(message='Game was successfully created!')
+        return StringMessage(message='Game was successfully created! Websafe Key: {}'.format(game_key.urlsafe()))
 
     @endpoints.method(CANCEL_GAME_REQUEST,
                       StringMessage,
