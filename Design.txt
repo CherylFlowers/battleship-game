@@ -1,0 +1,13 @@
+Overview
+
+I originally started with a single py module – battleship.py – and saved all game logic to this file. I found that the file grew to over 1,000 lines and it was becoming increasingly difficult to read and to find code. I decided to break this file into multiple smaller files such as battle_users.py for all user related methods and battle_boat.py for all boat related methods. This proved much easier to quickly locate the code that I needed and increased the readability and organization of the code.
+
+Additional Model Properties
+
+The Models that I designed and used are fairly straightforward. Perhaps the only odd area is the Move model where I stored the running totals of Hits, Misses and Sunk boats. I structured it like this in an attempt to reduce the amount of processing required to get the users’ state. Instead of counting or summing values, I saved the values directly in the Entity and just retrieved the last entity in the move sequence.
+
+Tradeoffs / Struggles
+
+I prepped for this project by reviewing the entire Conference Central app to become comfortable with the code. I found this helped me tremendously when it came time to develop the Design a Game API. I decided to start from scratch instead of using any templates. It was a long and frustrating experience however I’m glad I stuck with it as I learned some valuable skills like analyzing a stack trace and debugging python code.
+
+Coming from an SQL background I found it very difficult to conceptualize a NoSQL database. It was tough trying to implement Keys and Ancestors as I found that it didn’t give me the flexibility that I’ve come to expect from an SQL database. I also found it tough not being able to join to another Kind to retrieve additional data ie. joining the Move kind to the User kind to grab a users’ name. I’m confident that with experience this process will become more natural for me. I think it would greatly help if I could look at the structure of an established NoSQL database to see how it’s used in production. Once I can wrap my head around some concrete examples it would make more sense.
