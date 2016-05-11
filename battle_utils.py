@@ -27,7 +27,7 @@ def _getNDBKey(websafe_key_to_get):
     return ndb.Key(urlsafe=websafe_key_to_get)
 
 
-def schedule_email_reminder():
+def send_email_reminder():
     """
     Schedule email to remind a user of games in progress.
     """
