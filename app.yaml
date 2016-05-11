@@ -6,10 +6,6 @@ threadsafe: yes
 
 handlers:
 
-- url: /tasks/send_email_reminder
-  script: main.app
-  login: admin
-
 - url: /crons/schedule_email_reminder
   script: main.app
 

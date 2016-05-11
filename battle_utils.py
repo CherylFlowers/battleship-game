@@ -69,17 +69,3 @@ def schedule_email_reminder():
                                   'opponent': opponent.user_name},
                           url='/tasks/send_email_reminder'
                           )
-
-
-def send_email_reminder(request):
-    """
-    Send email to remind a user of games in progress.
-    """
-    mail.send_mail(
-        'noreply@%s.appspotmail.com' % (
-            app_identity.get_application_id()),          # from
-        request.get('email'),                            # to
-        'Battleship Game is waiting for your move ...',  # subject
-        'Hey there! {} is waiting for you to make a move!' % request.get(
-            'opponent')
-    )
