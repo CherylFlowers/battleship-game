@@ -34,6 +34,12 @@ indexes:
   - name: sequence
     direction: desc
 
+- kind: Move
+  properties:
+  - name: game_id
+  - name: sequence
+    direction: desc
+
 - kind: Boat
   properties:
   - name: game_id

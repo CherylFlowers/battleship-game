@@ -8,6 +8,8 @@ Server-side Google App Engine API for Battleship Game; uses Google Cloud Endpoin
 import endpoints
 
 from google.appengine.ext import ndb
+from google.appengine.api import app_identity
+from google.appengine.api import mail
 
 from protorpc import messages
 from protorpc import message_types
@@ -54,6 +56,55 @@ class BattleshipApi(remote.Service):
     """
     Battleship API v1
     """
+
+    @staticmethod
+    def send_email_reminder():
+        """
+        Send email to remind a user of games in progress.
+        """
+
+        # Get a list of users with emails.
+        user_list = battle_users._getUsersWithEmails()
+
+        # If no users have emails, exit the method.
+        if not user_list:
+            return
+
+        for each_user in user_list:
+
+            # Narrow down the list to users that are involved in an active game.
+            game_list = battle_game._getListOfGamesForUser(each_user.key)
+
+            # If this user is not involved in an active game, skip to the next
+            # user.
+            if not game_list:
+                continue
+
+            for each_game in game_list:
+
+                # Determine if the user made the last move.
+                last_move = battle_game._getGameLastMove(each_game.key)
+
+                # If the user made the last move there's no need
+                # to notify them via email, skip to the next game.
+                if last_move.user_id == each_user.key:
+                    continue
+
+                # If the user did not make the last move add
+                # an email notification to the task queue.
+
+                # Get the name of the opponent.
+                opponent = battle_users._getUserViaWebsafeKey(
+                    last_move.user_id.urlsafe())
+
+                # Send email to remind a user of games in progress.
+                mail.send_mail(
+                    'noreply@%s.appspotmail.com' % (
+                        app_identity.get_application_id()),          # from
+                    each_user.email,                                 # to
+                    'Battleship Game is waiting for your move ...',  # subject
+                    'Hey there! %s is waiting for you to make a move!' % opponent.user_name
+                )
 
     @endpoints.method(USER_POST_REQUEST,
                       StringMessage,
