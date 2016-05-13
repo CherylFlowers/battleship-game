@@ -120,7 +120,7 @@ class BattleshipApi(remote.Service):
             raise endpoints.ConflictException(
                 '{} already exists. Please enter a unique username.'.format(request.username))
 
-        if battle_users._emailExists(request.email):
+        if request.email is not None and battle_users._emailExists(request.email):
             raise endpoints.ConflictException(
                 '{} is already used. Please enter a unique email.'.format(request.email))
 
