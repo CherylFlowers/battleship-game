@@ -28,29 +28,17 @@ def _getBoat(game_id, user_id, move_row, move_col):
 
     Args:
       game_id: the id of the game being played.
-      user_id: the id of the user that's making the move.
+      user_id: the id of the user.
       move_row: the row of the Boat.
       move_col: the col of the Boat.
 
     Returns:
       a Boat entity
     """
-    # Get the game so we can determine who the users' opponent is.
-    selected_game = _validateAndGetGame(game_id.urlsafe())
-
-    # Grab the opponent user id.
-    if selected_game.user1 == user_id:
-        opponent_user_id = selected_game.user2
-    else:
-        opponent_user_id = selected_game.user1
-
-    # Check the opponents board.
-    selected_boat = Boat.query(Boat.game_id == game_id,
-                               Boat.user_id == opponent_user_id,
-                               Boat.row == move_row,
-                               Boat.col == move_col).get()
-
-    return selected_boat
+    return Boat.query(Boat.game_id == game_id,
+                      Boat.user_id == user_id,
+                      Boat.row == move_row,
+                      Boat.col == move_col).get()
 
 
 def _boatIsSunk(game_id, user_id, boat_type):

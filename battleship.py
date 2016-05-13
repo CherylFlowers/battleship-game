@@ -253,6 +253,12 @@ class BattleshipApi(remote.Service):
         game_key = battle_utils._getNDBKey(request.websafe_game_key)
         user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
+        # Get the opponents' key so we can determine if a move has hit a boat.
+        if current_game.user1 == user_key:
+            opponent_key = current_game.user2
+        else:
+            opponent_key = current_game.user1
+
         # Get the next move sequence. The sequence is used to generate
         # the game history.
         internal_move_counter = MoveSequence.query().get()
@@ -294,7 +300,7 @@ class BattleshipApi(remote.Service):
         else:
             # Get the Boat entity.
             selected_boat = battle_boat._getBoat(game_key,
-                                                 user_key,
+                                                 opponent_key,
                                                  my_row,
                                                  my_col
                                                  )
@@ -312,7 +318,7 @@ class BattleshipApi(remote.Service):
 
                 # Determine if the move has sunk a boat.
                 if battle_boat._boatIsSunk(game_key,
-                                           user_key,
+                                           opponent_key,
                                            selected_boat.boat_type
                                            ):
 
