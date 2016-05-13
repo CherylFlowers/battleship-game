@@ -344,7 +344,7 @@ class BattleshipApi(remote.Service):
                         if selected_boat.boat_type == battle_consts.DESTROYER:
                             name_of_ship = 'Destroyer'
 
-                            name_of_ship = 'Patrol'
+                            name_of_ship = 'Patrol Boat'
                         if selected_boat.boat_type == battle_consts.PATROL:
 
                         return_message = 'You sunk the {}!'.format(name_of_ship)
