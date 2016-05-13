@@ -325,6 +325,12 @@ class BattleshipApi(remote.Service):
                     if battle_game._userHasWonGame(game_key,
                                                    user_key
                                                    ):
+                        a_new_move.sunk += 1
+
+                        current_game.status = 1  # Finished
+                        current_game.winner = user_key
+                        current_game.put()
+
                         return_message = 'You won!'
                     else:
                         # The move has sunk a boat! Notify the user.
@@ -344,8 +350,8 @@ class BattleshipApi(remote.Service):
                         if selected_boat.boat_type == battle_consts.DESTROYER:
                             name_of_ship = 'Destroyer'
 
-                            name_of_ship = 'Patrol Boat'
                         if selected_boat.boat_type == battle_consts.PATROL:
+                            name_of_ship = 'Patrol Boat'
 
                         return_message = 'You sunk the {}!'.format(name_of_ship)
             else:
