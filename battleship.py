@@ -229,10 +229,20 @@ class BattleshipApi(remote.Service):
 
         # Validate that the game exists and get Game object.
         current_game = battle_game._validateAndGetGame(request.websafe_game_key)
+        game_key = battle_utils._getNDBKey(request.websafe_game_key)
+        user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
         # Validate that the user exists and get User object.
         selected_user = battle_users._getUserViaWebsafeKey(
             request.websafe_user_key)
+
+        # Get the last move in the game to ensure that it is this users' turn.
+        game_last_move = battle_game._getGameLastMove(game_key)
+
+        if game_last_move:
+            if game_last_move.user_id == user_key:
+                return StringMessage(
+                    message='It''s not your turn yet, please wait for the other player to make a move.')
 
         # Validate the row.
         my_row = request.row.upper()
@@ -249,9 +259,6 @@ class BattleshipApi(remote.Service):
                 'That was not a valid column. Valid columns are 1-10 inclusive.')
 
         return_message = ''
-
-        game_key = battle_utils._getNDBKey(request.websafe_game_key)
-        user_key = battle_utils._getNDBKey(request.websafe_user_key)
 
         # Get the opponents' key so we can determine if a move has hit a boat.
         if current_game.user1 == user_key:
