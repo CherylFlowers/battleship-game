@@ -332,20 +332,20 @@ class BattleshipApi(remote.Service):
 
                         name_of_ship = '<error: unknown ship>'
 
-                        if boat_type == battle_consts.CARRIER:
+                        if selected_boat.boat_type == battle_consts.CARRIER:
                             name_of_ship = 'Carrier'
 
-                        if boat_type == battle_consts.BATTLESHIP:
+                        if selected_boat.boat_type == battle_consts.BATTLESHIP:
                             name_of_ship = 'Battleship'
 
-                        if boat_type == battle_consts.SUBMARINE:
+                        if selected_boat.boat_type == battle_consts.SUBMARINE:
                             name_of_ship = 'Submarine'
 
-                        if boat_type == battle_consts.DESTROYER:
+                        if selected_boat.boat_type == battle_consts.DESTROYER:
                             name_of_ship = 'Destroyer'
 
-                        if boat_type == battle_consts.PATROL:
                             name_of_ship = 'Patrol'
+                        if selected_boat.boat_type == battle_consts.PATROL:
 
                         return_message = 'You sunk the {}!'.format(name_of_ship)
             else:
