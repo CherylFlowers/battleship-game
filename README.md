@@ -7,6 +7,18 @@ Welcome to the Battleship Game API!
 
 The Battleship game doesn't have a GUI yet, it's your job to create one! The Battleship RESTful API provides you with several endpoints that are built using Google Cloud Endpoints. The API is hosted on Google App Engine. The endpoints provide you with the basics needed for a game including creating users, creating a game, making moves and scoring hits.
 
+### Description
+
+Battleship is a guessing game played by 2 players. Each player has a 10x10 square board. The individual squares on the board are identified by a letter and a number. Letters refer to a row and range from A - J. Numbers refer to a column and range from 1 - 10.
+
+Each board contains 5 ships; a Carrier, a Battleship, a Cruiser, a Destroyer and a Patrol Boat. Each boat is worth a certain number of points; Carrier = 5, Battleship = 4, Cruiser = 3, Destroyer = 3 and Patrol Boat = 2.
+
+The objective of the game is to sink all of your opponents' boats.
+
+### Rules / Scoring
+
+When a new game is initiated, the boats are automatically placed on the players' boards. The players decide who goes first. Player 1 makes a move by launching a 'missile' to a specific location on his/her opponents' board using a Row-Column combination ie. A1. The player is notified if the move is a Miss, Hit, Duplicate Move or Sunk Boat. It's now Player 2's turn. Player 2 now makes a move by launching a missile to a specific location on his/her opponents' board (ie. Row-Column combination, say H7). Again, the player is notified if the move is a Miss, Hit, Duplicate Move or Sunk Boat. Play continues until one player sinks all boats on the other players' board.
+
 ### Pre-requisites
 
  - Internet
@@ -18,7 +30,7 @@ The Battleship game doesn't have a GUI yet, it's your job to create one! The Bat
 1. Update the application value in app.yaml to the app ID you have registered
  in the App Engine admin console.
 2. Using the Google App Engine Launcher, deploy the application.
-3. Using a browser navigate to <your app id>/_ah/api/explorer.
+3. Using a browser navigate to `<your app id>/_ah/api/explorer`.
 
 ### API Endpoint Methods
 
